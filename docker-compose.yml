@@ -1,0 +1,14 @@
+version: "3"
+
+services:
+
+  app:
+    build:
+      context: ./
+      dockerfile: Dockerfile
+    environment:
+      GOOS: linux
+    volumes:
+      - ./:/go/src/github.com/silinternational/cloudflare-scanner
+    working_dir: /go/src/github.com/silinternational/cloudflare-scanner
+    command: ["./run-debug.sh"]
