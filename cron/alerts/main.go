@@ -29,9 +29,9 @@ const EnvKeyCFApiKey = "CF_API_KEY"
 // the email address associated with the Cloudflare account to access its API
 const EnvKeyCFApiEmail = "CF_API_EMAIL"
 
-// EnvKeyCFContainsString is the environment variable for
+// EnvKeyCFContainsStrings is the environment variable for
 // the substring that this app should be using to identify certain Cloudflare record names
-const EnvKeyCFContainsString = "CF_CONTAINS_STRING"
+const EnvKeyCFContainsStrings = "CF_CONTAINS_STRINGS"
 
 // EnvKeyCFZoneNames is the environment variable for
 // the zone names you want the app to get records from (comma separated list)
@@ -62,15 +62,22 @@ func getSESAWSRegion() string {
 	return region
 }
 
+func splitStringList(compoundValue string) []string {
+	initialList := strings.Split(compoundValue, EnvListDelimiter)
+	output := []string{}
+	for _, s := range initialList {
+		output = append(output, strings.Trim(s, " "))
+	}
+	return output
+}
+
 func getZoneNames(a *AlertsConfig) error {
 	gluedZoneNames := os.Getenv(EnvKeyCFZoneNames)
 	if gluedZoneNames == "" {
 		return fmt.Errorf("required value missing for environment variable %s", EnvKeyCFZoneNames)
 	}
-	zoneNames := strings.Split(gluedZoneNames, EnvListDelimiter)
-	for _, zone := range zoneNames {
-		a.CFZoneNames = append(a.CFZoneNames, strings.Trim(zone, " "))
-	}
+	a.CFZoneNames = splitStringList(gluedZoneNames)
+
 	return nil
 }
 
@@ -79,10 +86,18 @@ func getRecipientAddresses(a *AlertsConfig) error {
 	if gluedRecipients == "" {
 		return fmt.Errorf("required value missing for environment variable %s", EnvKeySESRecipients)
 	}
-	recipients := strings.Split(gluedRecipients, EnvListDelimiter)
-	for _, r := range recipients {
-		a.RecipientEmails = append(a.RecipientEmails, strings.Trim(r, " "))
+
+	a.RecipientEmails = splitStringList(gluedRecipients)
+	return nil
+}
+
+func getCFContainsStrings(a *AlertsConfig) error {
+	gluedSearchStrings := os.Getenv(EnvKeyCFContainsStrings)
+	if gluedSearchStrings == "" {
+		return fmt.Errorf("required value missing for environment variable %s", EnvKeyCFContainsStrings)
 	}
+
+	a.CFContainsStrings = splitStringList(gluedSearchStrings)
 	return nil
 }
 
@@ -110,8 +125,10 @@ func (a *AlertsConfig) init() error {
 			return err
 	}
 
-	if err := getRequiredString(EnvKeyCFContainsString, &a.CFContainsString); err != nil {
-		return err
+	if len(a.CFContainsStrings) < 1 {
+		if err := getCFContainsStrings(a); err != nil {
+			return err
+		}
 	}
 
 	if len(a.CFZoneNames) < 1 {
@@ -149,12 +166,29 @@ type AlertsConfig struct {
 	CFApiKey string `json:"CFApiKey"`
 	CFApiEmail string `json:"CFApiEmail"`
 	CFZoneNames      []string `json:"CFZoneNames"`
-	CFContainsString string   `json:"CFContainsString"`
+	CFContainsStrings []string   `json:"CFContainsString"`
 	SESAWSRegion     string   `json:"SESAWSRegion"`
 	SESCharSet       string   `json:"SESCharSet"`
 	SESReturnToAddr  string   `json:"SESReturnToAddr"`
 	SESSubjectText   string   `json:"SESSubjectText"`
 	RecipientEmails  []string `json:"RecipientEmails"`
+}
+
+func getCFRecordsWithSubstring(substring, zoneName string, recs []cloudflare.DNSRecord, results map[string][]string) {
+	log.Printf("\nRecords with '%s' in the name in zone: %s", substring, zoneName)
+
+	subRecs := []string{}
+	for _, r := range recs {
+		if len(r.Name) > 0 && strings.Contains(r.Name, substring) {
+			log.Print("\n ", r.Name)
+			subRecs = append(subRecs, r.Name + " ... " + r.Content)
+		}
+	}
+	if len(subRecs) > 0  {
+		log.Print("\n ----- \n")
+		results[zoneName] = subRecs
+	}
+
 }
 
 func getCFRecords(config AlertsConfig) (map[string][]string, error) {
@@ -181,18 +215,9 @@ func getCFRecords(config AlertsConfig) (map[string][]string, error) {
 			return results, err
 		}
 
-		log.Printf("\nRecords with '%s' in the name in zone: %s", config.CFContainsString, zoneName)
-
-		subRecs := []string{}
-		for _, r := range recs {
-			if len(r.Name) > 0 && strings.Contains(r.Name, config.CFContainsString) {
-				log.Print("\n ", r.Name)
-				subRecs = append(subRecs, r.Name + " ... " + r.Content)
-			}
-		}
-		if len(subRecs) > 0  {
-			log.Print("\n ----- \n")
-			results[zoneName] = subRecs
+		for _, ss := range config.CFContainsStrings {
+			ss = strings.Trim(ss, " ")
+			getCFRecordsWithSubstring(ss, zoneName, recs, results)
 		}
 	}
 
@@ -268,7 +293,7 @@ func sendEmails(config AlertsConfig, cfRecords map[string][]string)  {
 	if lastError != "" {
 		addresses := strings.Join(badRecipients, ", ")
 		msg := fmt.Sprintf(
-			"\nError sending phpmyadmin email from %s to \n %s: \n %s",
+			"\nError sending Cloudflare scanner email from %s to \n %s: \n %s",
 			*aws.String(config.SESReturnToAddr),
 			addresses,
 			lastError,
@@ -291,7 +316,7 @@ func handler(config AlertsConfig) error {
 	}
 
 	if len(cfRecords) < 1 {
-		log.Printf("\n No records found in Cloudflare containing '%s'", config.CFContainsString)
+		log.Printf("\n No records found in Cloudflare containing any of these: %v", config.CFContainsStrings)
 		return nil
 	}
 

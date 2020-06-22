@@ -10,7 +10,7 @@ func TestGetCFRecordsOK(t *testing.T) {
 		CFApiKey: "abc123",
 		CFApiEmail: "cio@domain1.org",
 		CFZoneNames: []string{"domain1.org","domain2.org"},
-		CFContainsString: "outdated",
+		CFContainsStrings: []string{"outdated"},
 		SESAWSRegion: "",
 		SESCharSet: "",
 		SESReturnToAddr: "no_reply@domain1.org",
