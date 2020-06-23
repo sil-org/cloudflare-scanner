@@ -30,7 +30,8 @@ const EnvKeyCFApiKey = "CF_API_KEY"
 const EnvKeyCFApiEmail = "CF_API_EMAIL"
 
 // EnvKeyCFContainsStrings is the environment variable for
-// the substring that this app should be using to identify certain Cloudflare record names
+// the substrings (comma separated) that this app should be using to identify
+// certain Cloudflare record names
 const EnvKeyCFContainsStrings = "CF_CONTAINS_STRINGS"
 
 // EnvKeyCFZoneNames is the environment variable for

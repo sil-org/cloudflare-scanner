@@ -1,7 +1,6 @@
 package main
 
 import (
-	"strings"
 	"testing"
 )
 
@@ -30,24 +29,6 @@ func TestGetCFRecordsOK(t *testing.T) {
 		t.Errorf("Did not get default SESCharSet. Expected: %s, but got: %s", expected, results)
 	}
 
-}
-
-func TestGetCFRecordsMissingRequired(t *testing.T) {
-	config := AlertsConfig {
-		CFApiKey: "abc123",
-	}
-
-	var err error
-	if err = config.init(); err == nil {
-		t.Errorf("Expected an error, but didn't get one.")
-		return
-	}
-
-	results := err.Error()
-	expected := "required"
-	if !strings.Contains(results, expected) {
-		t.Errorf("The message of the error thrown was not correct.\nExpected it to contain: %s. Got '%s'", expected, results)
-	}
 }
 
 func TestGetCFRecords(t *testing.T) {
