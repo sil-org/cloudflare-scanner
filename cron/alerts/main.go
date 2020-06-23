@@ -52,7 +52,7 @@ const EnvKeySESRecipients = "SES_RECIPIENT_EMAILS"
 
 // EnvKeyAWSRegion is the environment variable for
 // the AWS region where the lambda should ne run
-const EnvKeyAWSRegion = "AWS_REGION"
+const EnvKeyAWSRegion = "SES_AWS_REGION"
 
 
 func getSESAWSRegion() string {
