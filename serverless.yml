@@ -1,0 +1,39 @@
+service: cloudflare-scanner
+
+provider:
+  name: aws
+  runtime: go1.x
+  stage: prod
+  timeout: 30
+  versionFunctions: false
+  memorySize: 512
+
+  environment:
+    AWS_REGION: ${env:AWS_REGION}
+    CF_API_EMAIL: ${env:CF_API_EMAIL}
+    CF_API_KEY: ${env:CF_API_KEY}
+    CF_CONTAINS_STRING: ${env:CF_CONTAINS_STRING}
+    CF_ZONE_NAMES: ${env:CF_ZONE_NAMES}
+    SES_SUBJECT: ${env:SES_SUBJECT}
+    SES_RETURN_TO_ADDR: ${env:SES_RETURN_TO_ADDR}
+    SES_RECIPIENT_EMAILS: ${env:SES_RECIPIENT_EMAILS}
+
+  iamRoleStatements:
+    - Effect: "Allow"
+      Action:
+        - "ses:SendEmail"
+      Resource: "*"
+
+package:
+  exclude:
+    - ./**
+  include:
+    - ./bin/**
+
+functions:
+  alerts:
+    handler: bin/alerts
+    timeout: 300
+    events:
+        - schedule: cron(*/2 * ? * MON,TUE,WED,THU,FRI *)
+       # - schedule: cron(0 8,10,13,14 ? * MON,TUE,WED,THU,FRI *)

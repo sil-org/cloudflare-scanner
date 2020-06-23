@@ -1,0 +1,16 @@
+# Serverless directories
+.serverless
+package-lock.json
+
+# golang output binary directory
+bin
+
+# local creds and stuff
+aws.credentials
+aws.env
+*.aes
+local.env
+.env
+
+# dev tools metadata
+.idea
