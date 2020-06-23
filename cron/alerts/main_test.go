@@ -5,7 +5,7 @@ import (
 	"testing"
 )
 
-func zTestGetCFRecordsOK(t *testing.T) {
+func TestGetCFRecordsOK(t *testing.T) {
 	config := AlertsConfig {
 		CFApiKey: "abc123",
 		CFApiEmail: "cio@domain1.org",
@@ -32,7 +32,7 @@ func zTestGetCFRecordsOK(t *testing.T) {
 
 }
 
-func zTestGetCFRecordsMissingRequired(t *testing.T) {
+func TestGetCFRecordsMissingRequired(t *testing.T) {
 	config := AlertsConfig {
 		CFApiKey: "abc123",
 	}
