@@ -6,9 +6,11 @@ services:
     build:
       context: ./
       dockerfile: Dockerfile
+    env_file:
+      - .env
     environment:
       GOOS: linux
     volumes:
-      - ./:/go/src/github.com/silinternational/cloudflare-scanner
-    working_dir: /go/src/github.com/silinternational/cloudflare-scanner
+      - ./:/app
+    working_dir: /app
     command: ["./run-debug.sh"]
