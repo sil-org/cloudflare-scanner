@@ -35,5 +35,5 @@ functions:
     handler: bin/alerts
     timeout: 300
     events:
-        - schedule: cron(*/10 * ? * MON,TUE,WED,THU,FRI *)
+        - schedule: cron(*/2 * ? * MON,TUE,WED,THU,FRI *)
        # - schedule: cron(0 8,10,13,14 ? * MON,TUE,WED,THU,FRI *)
