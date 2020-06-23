@@ -1,4 +1,4 @@
-package alerts
+package main
 
 import (
 	"fmt"
@@ -175,17 +175,17 @@ type AlertsConfig struct {
 }
 
 func getCFRecordsWithSubstring(substring, zoneName string, recs []cloudflare.DNSRecord, results map[string][]string) {
-	log.Printf("\nRecords with '%s' in the name in zone: %s", substring, zoneName)
+	log.Printf("Records with '%s' in the name in zone: %s", substring, zoneName)
 
 	subRecs := []string{}
 	for _, r := range recs {
 		if len(r.Name) > 0 && strings.Contains(r.Name, substring) {
-			log.Print("\n ", r.Name)
+			log.Print(" ", r.Name)
 			subRecs = append(subRecs, r.Name + " ... " + r.Content)
 		}
 	}
 	if len(subRecs) > 0  {
-		log.Print("\n ----- \n")
+		log.Print("-----")
 		results[zoneName] = subRecs
 	}
 
@@ -197,21 +197,21 @@ func getCFRecords(config AlertsConfig) (map[string][]string, error) {
 		log.Fatal(err)
 	}
 
-	fmt.Printf("\nStarting scan for %v", config.CFZoneNames)
+	log.Printf("Starting scan for %v", config.CFZoneNames)
 
 	results := map[string][]string{}
 
 	for _, zoneName := range config.CFZoneNames {
-		zoneID, err := api.ZoneIDByName(strings.Trim(zoneName, " "))
+		zoneID, err := api.ZoneIDByName(zoneName)
 		if err != nil {
-			err = fmt.Errorf("error getting Cloudflare zone %s ... %v", zoneName, err.Error())
+			err = fmt.Errorf("error getting Cloudflare zone %s ... %v ", zoneName, err.Error())
 			return results, err
 		}
 
 		// Fetch all records for a zone
 		recs, err := api.DNSRecords(zoneID, cloudflare.DNSRecord{})
 		if err != nil {
-			err = fmt.Errorf("error getting Cloudflare dns records for zone %s ... %v", zoneName, err.Error())
+			err = fmt.Errorf("error getting Cloudflare dns records for zone %s ... %v ", zoneName, err.Error())
 			return results, err
 		}
 

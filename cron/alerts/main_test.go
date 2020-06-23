@@ -1,11 +1,11 @@
-package alerts
+package main
 
 import (
-	"testing"
 	"strings"
+	"testing"
 )
 
-func TestGetCFRecordsOK(t *testing.T) {
+func zTestGetCFRecordsOK(t *testing.T) {
 	config := AlertsConfig {
 		CFApiKey: "abc123",
 		CFApiEmail: "cio@domain1.org",
@@ -32,7 +32,7 @@ func TestGetCFRecordsOK(t *testing.T) {
 
 }
 
-func TestGetCFRecordsMissingRequired(t *testing.T) {
+func zTestGetCFRecordsMissingRequired(t *testing.T) {
 	config := AlertsConfig {
 		CFApiKey: "abc123",
 	}
@@ -47,5 +47,23 @@ func TestGetCFRecordsMissingRequired(t *testing.T) {
 	expected := "required"
 	if !strings.Contains(results, expected) {
 		t.Errorf("The message of the error thrown was not correct.\nExpected it to contain: %s. Got '%s'", expected, results)
+	}
+}
+
+func TestGetCFRecords(t *testing.T) {
+	t.Skip("Only run this in local development")
+
+	// Just initialize config from .env file
+	config := AlertsConfig{}
+
+	if err := config.init(); err != nil {
+		t.Errorf("Failed initializing config for test: %v", err)
+		return
+	}
+
+	_, err := getCFRecords(config)
+	if err != nil {
+		t.Errorf("Failed getting results: %v", err)
+		return
 	}
 }
