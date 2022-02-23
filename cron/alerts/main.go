@@ -6,13 +6,12 @@ import (
 	"os"
 	"strings"
 
-	"github.com/cloudflare/cloudflare-go"
 	"github.com/aws/aws-lambda-go/lambda"
-	"github.com/aws/aws-sdk-go/service/ses"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/ses"
+	"github.com/cloudflare/cloudflare-go"
 )
-
 
 // SESCharSet is the set to use for AWS SES emails
 const SESCharSet = "UTF-8"
@@ -53,7 +52,6 @@ const EnvKeySESRecipients = "SES_RECIPIENT_EMAILS"
 // EnvKeyAWSRegion is the environment variable for
 // the AWS region where the lambda should ne run
 const EnvKeyAWSRegion = "SES_AWS_REGION"
-
 
 func getSESAWSRegion() string {
 	region := os.Getenv(EnvKeyAWSRegion)
@@ -117,13 +115,12 @@ func getRequiredString(envKey string, configEntry *string) error {
 }
 
 func (a *AlertsConfig) init() error {
-
 	if err := getRequiredString(EnvKeyCFApiEmail, &a.CFApiEmail); err != nil {
-			return err
-		}
+		return err
+	}
 
 	if err := getRequiredString(EnvKeyCFApiKey, &a.CFApiKey); err != nil {
-			return err
+		return err
 	}
 
 	if len(a.CFContainsStrings) < 1 {
@@ -164,15 +161,15 @@ func (a *AlertsConfig) init() error {
 }
 
 type AlertsConfig struct {
-	CFApiKey string `json:"CFApiKey"`
-	CFApiEmail string `json:"CFApiEmail"`
-	CFZoneNames      []string `json:"CFZoneNames"`
-	CFContainsStrings []string   `json:"CFContainsString"`
-	SESAWSRegion     string   `json:"SESAWSRegion"`
-	SESCharSet       string   `json:"SESCharSet"`
-	SESReturnToAddr  string   `json:"SESReturnToAddr"`
-	SESSubjectText   string   `json:"SESSubjectText"`
-	RecipientEmails  []string `json:"RecipientEmails"`
+	CFApiKey          string   `json:"CFApiKey"`
+	CFApiEmail        string   `json:"CFApiEmail"`
+	CFZoneNames       []string `json:"CFZoneNames"`
+	CFContainsStrings []string `json:"CFContainsString"`
+	SESAWSRegion      string   `json:"SESAWSRegion"`
+	SESCharSet        string   `json:"SESCharSet"`
+	SESReturnToAddr   string   `json:"SESReturnToAddr"`
+	SESSubjectText    string   `json:"SESSubjectText"`
+	RecipientEmails   []string `json:"RecipientEmails"`
 }
 
 func getCFRecordsWithSubstring(substring, zoneName string, recs []cloudflare.DNSRecord, results map[string][]string) {
@@ -182,14 +179,13 @@ func getCFRecordsWithSubstring(substring, zoneName string, recs []cloudflare.DNS
 	for _, r := range recs {
 		if len(r.Name) > 0 && strings.Contains(r.Name, substring) {
 			log.Print(" ", r.Name)
-			subRecs = append(subRecs, r.Name + " ... " + r.Content)
+			subRecs = append(subRecs, r.Name+" ... "+r.Content)
 		}
 	}
-	if len(subRecs) > 0  {
+	if len(subRecs) > 0 {
 		log.Print("-----")
 		results[zoneName] = subRecs
 	}
-
 }
 
 func getCFRecords(config AlertsConfig) (map[string][]string, error) {
@@ -237,7 +233,8 @@ func sendAnEmail(emailMsg ses.Message, recipient *string, config AlertsConfig) e
 	}
 
 	sess, err := session.NewSession(&aws.Config{
-		Region: aws.String(config.SESAWSRegion)},
+		Region: aws.String(config.SESAWSRegion),
+	},
 	)
 
 	// Create an SES session.
@@ -247,12 +244,11 @@ func sendAnEmail(emailMsg ses.Message, recipient *string, config AlertsConfig) e
 	return err
 }
 
-func sendEmails(config AlertsConfig, cfRecords map[string][]string)  {
-
+func sendEmails(config AlertsConfig, cfRecords map[string][]string) {
 	msg := fmt.Sprintf("%s\n", config.SESSubjectText)
 	for zone, ps := range cfRecords {
 		msg = fmt.Sprintf("%s\n Those found in %s", msg, zone)
-		for _, p := range(ps) {
+		for _, p := range ps {
 			msg = fmt.Sprintf("%s\n%s", msg, p)
 		}
 	}
@@ -301,11 +297,9 @@ func sendEmails(config AlertsConfig, cfRecords map[string][]string)  {
 		)
 		log.Print(msg)
 	}
-
 }
 
 func handler(config AlertsConfig) error {
-
 	if err := config.init(); err != nil {
 		return err
 	}
@@ -323,7 +317,6 @@ func handler(config AlertsConfig) error {
 
 	sendEmails(config, cfRecords)
 	return nil
-
 }
 
 func main() {
