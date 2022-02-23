@@ -15,10 +15,9 @@ provider:
       Resource: "*"
 
 package:
-  exclude:
-    - ./**
-  include:
-    - ./bin/**
+  patterns:
+    - '!./**'
+    - './bin/**'
 
 functions:
   alerts:
