@@ -1,10 +1,8 @@
-FROM golang:1.13.12
-
-ENV GO111MODULE on
+FROM golang:1.17
 
 # Install packages
-RUN curl -sL https://deb.nodesource.com/setup_14.x | bash -
-RUN apt-get install -y git nodejs netcat
+RUN curl -sL https://deb.nodesource.com/setup_16.x | bash -
+RUN apt-get install -y nodejs
 
 RUN alias ll="ls -al"
 
@@ -14,7 +12,7 @@ RUN mkdir -p /app
 COPY ./ /app/
 WORKDIR /app
 
-RUN npm install -g serverless && npm install
+RUN npm install -g serverless@3 && npm install
 
 WORKDIR /app
 

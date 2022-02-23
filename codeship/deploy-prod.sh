@@ -18,4 +18,4 @@ export SES_SUBJECT="${SES_SUBJECT}"
 export SES_RETURN_TO_ADDR="${SES_RETURN_TO_ADDR}"
 export SES_RECIPIENT_EMAILS_USA="${SES_RECIPIENT_EMAILS_USA}"
 
-serverless deploy -v --stage prod
+serverless deploy --verbose --stage prod
