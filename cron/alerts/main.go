@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"os"
@@ -206,7 +207,8 @@ func getCFRecords(config AlertsConfig) (map[string][]string, error) {
 		}
 
 		// Fetch all records for a zone
-		recs, err := api.DNSRecords(zoneID, cloudflare.DNSRecord{})
+		recs, _, err := api.ListDNSRecords(context.Background(), cloudflare.ZoneIdentifier(zoneID),
+			cloudflare.ListDNSRecordsParams{})
 		if err != nil {
 			err = fmt.Errorf("error getting Cloudflare dns records for zone %s ... %v ", zoneName, err.Error())
 			return results, err
