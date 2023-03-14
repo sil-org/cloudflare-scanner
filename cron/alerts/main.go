@@ -276,8 +276,8 @@ func sendEmails(config AlertsConfig, cfRecords map[string][]string) {
 }
 
 func sendErrorEmails(config AlertsConfig, err error) {
-	subject := "Error attempting to scan Cloudflare."
-	msg := fmt.Sprintf("%s. \n%s", subject, err)
+	subject := "error attempting to scan Cloudflare."
+	msg := fmt.Sprintf("The Cloudflare scanner failed with the following error. \n%s", err)
 
 	emailMsg := getSESMessage(config, subject, msg)
 
