@@ -255,9 +255,52 @@ func sendEmails(config AlertsConfig, cfRecords map[string][]string) {
 		}
 	}
 
+	subject := config.SESSubjectText
+
+	emailMsg := getSESMessage(config, subject, msg)
+
+	// Only report the last email error
+	lastError := ""
+	badRecipients := []string{}
+
+	// Send emails to one recipient at a time to avoid one bad email sabotaging it all
+	for _, address := range config.RecipientEmails {
+		err := sendAnEmail(emailMsg, &address, config)
+		if err != nil {
+			lastError = err.Error()
+			badRecipients = append(badRecipients, address)
+		}
+	}
+
+	logLastError(config, lastError, badRecipients)
+}
+
+func sendErrorEmails(config AlertsConfig, err error) {
+	subject := "Error attempting to scan Cloudflare."
+	msg := fmt.Sprintf("%s. \n%s", subject, err)
+
+	emailMsg := getSESMessage(config, subject, msg)
+
+	// Only report the last email error
+	lastError := ""
+	badRecipients := []string{}
+
+	// Send emails to one recipient at a time to avoid one bad email sabotaging it all
+	for _, address := range config.RecipientEmails {
+		err := sendAnEmail(emailMsg, &address, config)
+		if err != nil {
+			lastError = err.Error()
+			badRecipients = append(badRecipients, address)
+		}
+	}
+
+	logLastError(config, lastError, badRecipients)
+}
+
+func getSESMessage(config AlertsConfig, subject, msg string) ses.Message {
+
 	charSet := config.SESCharSet
 
-	subject := config.SESSubjectText
 	subjContent := ses.Content{
 		Charset: &charSet,
 		Data:    &subject,
@@ -276,29 +319,22 @@ func sendEmails(config AlertsConfig, cfRecords map[string][]string) {
 	emailMsg.SetSubject(&subjContent)
 	emailMsg.SetBody(&msgBody)
 
-	// Only report the last email error
-	lastError := ""
-	badRecipients := []string{}
+	return emailMsg
+}
 
-	// Send emails to one recipient at a time to avoid one bad email sabotaging it all
-	for _, address := range config.RecipientEmails {
-		err := sendAnEmail(emailMsg, &address, config)
-		if err != nil {
-			lastError = err.Error()
-			badRecipients = append(badRecipients, address)
-		}
+func logLastError(config AlertsConfig, lastError string, badRecipients []string) {
+	if lastError == "" {
+		return
 	}
 
-	if lastError != "" {
-		addresses := strings.Join(badRecipients, ", ")
-		msg := fmt.Sprintf(
-			"\nError sending Cloudflare scanner email from %s to \n %s: \n %s",
-			*aws.String(config.SESReturnToAddr),
-			addresses,
-			lastError,
-		)
-		log.Print(msg)
-	}
+	addresses := strings.Join(badRecipients, ", ")
+	msg := fmt.Sprintf(
+		"\nError sending Cloudflare scanner email from %s to \n %s: \n %s",
+		*aws.String(config.SESReturnToAddr),
+		addresses,
+		lastError,
+	)
+	log.Print(msg)
 }
 
 func handler(config AlertsConfig) error {
@@ -309,6 +345,7 @@ func handler(config AlertsConfig) error {
 	// Let AWS retry if there is an error connecting to Cloudflare
 	cfRecords, err := getCFRecords(config)
 	if err != nil {
+		sendErrorEmails(config, err)
 		return err
 	}
 
