@@ -4,5 +4,6 @@ output "serverless-access-key-id" {
 }
 
 output "serverless-secret-access-key" {
-  value = module.serverless-user.aws_secret_access_key
+  value     = module.serverless-user.aws_secret_access_key
+  sensitive = true
 }
