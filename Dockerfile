@@ -2,6 +2,8 @@ FROM golang:1.19
 
 # Install packages
 RUN curl -sL https://deb.nodesource.com/setup_16.x | bash -
+
+RUN apt-get update -y 
 RUN apt-get install -y nodejs
 
 RUN alias ll="ls -al"
@@ -12,7 +14,6 @@ RUN mkdir -p /app
 COPY ./ /app/
 WORKDIR /app
 
-RUN apk add --no-cache --no-progress npm
 RUN npm install -g serverless@3 && npm install
 
 WORKDIR /app
