@@ -12,6 +12,7 @@ RUN mkdir -p /app
 COPY ./ /app/
 WORKDIR /app
 
+RUN apk add --no-cache --no-progress npm
 RUN npm install -g serverless@3 && npm install
 
 WORKDIR /app
