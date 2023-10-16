@@ -85,9 +85,9 @@ functions:
 
   alerts-eth:
     environment:
-      CF_API_KEY: ${env:CF_API_KEY_ETH}
+      CF_API_KEY: ${env:CF_API_KEY_2}
       CF_CONTAINS_STRINGS: ${env:CF_CONTAINS_STRINGS}
-      CF_ZONE_NAMES: ${env:CF_ZONE_NAMES_ETH}
+      CF_ZONE_NAMES: ${env:CF_ZONE_NAMES_2}
       SES_AWS_REGION: ${env:AWS_REGION}
       SES_SUBJECT: ${env:SES_SUBJECT}
       SES_RETURN_TO_ADDR: ${env:SES_RETURN_TO_ADDR}
