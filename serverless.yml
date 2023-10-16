@@ -49,7 +49,6 @@ package:
 functions:
   alerts:
     environment:
-      CF_API_EMAIL: ${env:CF_API_EMAIL}
       CF_API_KEY: ${env:CF_API_KEY}
       CF_CONTAINS_STRINGS: ${env:CF_CONTAINS_STRINGS}
       CF_ZONE_NAMES: ${env:CF_ZONE_NAMES}
@@ -68,7 +67,6 @@ functions:
 
   alerts-usa:
     environment:
-      CF_API_EMAIL: ${env:CF_API_EMAIL}
       CF_API_KEY: ${env:CF_API_KEY}
       CF_CONTAINS_STRINGS: ${env:CF_CONTAINS_STRINGS_USA}
       CF_ZONE_NAMES: ${env:CF_ZONE_NAMES}
