@@ -7,4 +7,4 @@ set -e
 set -x
 
 # Build all the things
-go build -ldflags="-s -w" -o bin/alerts  cron/alerts/main.go
+CGO_ENABLED=0 go build -ldflags="-s -w" -o bin/alerts  cron/alerts/main.go

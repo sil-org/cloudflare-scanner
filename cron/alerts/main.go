@@ -21,13 +21,9 @@ const SESCharSet = "UTF-8"
 // the character that splits environment variables with list values
 const EnvListDelimiter = ","
 
-// EnvKeyCFApiKey is the environment variable for
-// the key needed to access the Cloudflare API
-const EnvKeyCFApiKey = "CF_API_KEY"
-
-// EnvKeyCFApiEmail is the environment variable for
-// the email address associated with the Cloudflare account to access its API
-const EnvKeyCFApiEmail = "CF_API_EMAIL"
+// EnvKeyCFApiToken is the environment variable for
+// the API token needed to access the Cloudflare API
+const EnvKeyCFApiToken = "CF_API_TOKEN"
 
 // EnvKeyCFContainsStrings is the environment variable for
 // the substrings (comma separated) that this app should be using to identify
@@ -116,11 +112,7 @@ func getRequiredString(envKey string, configEntry *string) error {
 }
 
 func (a *AlertsConfig) init() error {
-	if err := getRequiredString(EnvKeyCFApiEmail, &a.CFApiEmail); err != nil {
-		return err
-	}
-
-	if err := getRequiredString(EnvKeyCFApiKey, &a.CFApiKey); err != nil {
+	if err := getRequiredString(EnvKeyCFApiToken, &a.CFApiToken); err != nil {
 		return err
 	}
 
@@ -162,8 +154,7 @@ func (a *AlertsConfig) init() error {
 }
 
 type AlertsConfig struct {
-	CFApiKey          string   `json:"CFApiKey"`
-	CFApiEmail        string   `json:"CFApiEmail"`
+	CFApiToken        string   `json:"CFApiToken"`
 	CFZoneNames       []string `json:"CFZoneNames"`
 	CFContainsStrings []string `json:"CFContainsString"`
 	SESAWSRegion      string   `json:"SESAWSRegion"`
@@ -190,7 +181,7 @@ func getCFRecordsWithSubstring(substring, zoneName string, recs []cloudflare.DNS
 }
 
 func getCFRecords(config AlertsConfig) (map[string][]string, error) {
-	api, err := cloudflare.New(config.CFApiKey, config.CFApiEmail)
+	api, err := cloudflare.NewWithAPIToken(config.CFApiToken)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -298,7 +289,6 @@ func sendErrorEmails(config AlertsConfig, err error) {
 }
 
 func getSESMessage(config AlertsConfig, subject, msg string) ses.Message {
-
 	charSet := config.SESCharSet
 
 	subjContent := ses.Content{
