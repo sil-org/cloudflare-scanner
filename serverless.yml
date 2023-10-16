@@ -49,7 +49,7 @@ package:
 functions:
   alerts:
     environment:
-      CF_API_KEY: ${env:CF_API_KEY}
+      CF_API_TOKEN: ${env:CF_API_TOKEN}
       CF_CONTAINS_STRINGS: ${env:CF_CONTAINS_STRINGS}
       CF_ZONE_NAMES: ${env:CF_ZONE_NAMES}
       SES_AWS_REGION: ${env:AWS_REGION}
@@ -67,7 +67,7 @@ functions:
 
   alerts-usa:
     environment:
-      CF_API_KEY: ${env:CF_API_KEY}
+      CF_API_TOKEN: ${env:CF_API_TOKEN}
       CF_CONTAINS_STRINGS: ${env:CF_CONTAINS_STRINGS_USA}
       CF_ZONE_NAMES: ${env:CF_ZONE_NAMES}
       SES_AWS_REGION: ${env:AWS_REGION}
@@ -85,7 +85,7 @@ functions:
 
   alerts-eth:
     environment:
-      CF_API_KEY: ${env:CF_API_KEY_2}
+      CF_API_TOKEN: ${env:CF_API_TOKEN_2}
       CF_CONTAINS_STRINGS: ${env:CF_CONTAINS_STRINGS}
       CF_ZONE_NAMES: ${env:CF_ZONE_NAMES_2}
       SES_AWS_REGION: ${env:AWS_REGION}
