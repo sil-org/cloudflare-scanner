@@ -7,7 +7,6 @@ import (
 func TestGetCFRecordsOK(t *testing.T) {
 	config := AlertsConfig{
 		CFApiToken:        "abc123",
-		CFApiEmail:        "cio@domain1.org",
 		CFZoneNames:       []string{"domain1.org", "domain2.org"},
 		CFContainsStrings: []string{"outdated"},
 		SESAWSRegion:      "",
