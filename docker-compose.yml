@@ -11,4 +11,4 @@ services:
     volumes:
       - ./:/app
     working_dir: /app
-    command: ["./run-debug.sh"]
+    command: bash -c "codeship/build.sh"
