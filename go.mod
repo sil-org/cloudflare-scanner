@@ -1,6 +1,6 @@
 module github.org/silinternational/cloudflare-scanner
 
-go 1.19
+go 1.21
 
 require (
 	github.com/aws/aws-lambda-go v1.41.0
