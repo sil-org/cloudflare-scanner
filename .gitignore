@@ -1,6 +1,5 @@
 # Serverless directories
 .serverless
-package-lock.json
 
 # golang output binary directory
 bin
