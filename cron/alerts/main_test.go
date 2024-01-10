@@ -40,9 +40,5 @@ func TestGetCFRecords(t *testing.T) {
 		return
 	}
 
-	_, err := getCFRecords(config)
-	if err != nil {
-		t.Errorf("Failed getting results: %v", err)
-		return
-	}
+	_ = getCFRecords(config)
 }
