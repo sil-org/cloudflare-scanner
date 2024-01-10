@@ -180,7 +180,7 @@ func getCFRecordsWithSubstring(substring, zoneName string, recs []cloudflare.DNS
 	}
 }
 
-func getCFRecords(config AlertsConfig) (map[string][]string, error) {
+func getCFRecords(config AlertsConfig) map[string][]string {
 	api, err := cloudflare.NewWithAPIToken(config.CFApiToken)
 	if err != nil {
 		log.Fatal(err)
@@ -194,7 +194,8 @@ func getCFRecords(config AlertsConfig) (map[string][]string, error) {
 		zoneID, err := api.ZoneIDByName(zoneName)
 		if err != nil {
 			err = fmt.Errorf("error getting Cloudflare zone %s ... %v ", zoneName, err.Error())
-			return results, err
+			sendErrorEmails(config, err)
+			continue
 		}
 
 		// Fetch all records for a zone
@@ -202,7 +203,8 @@ func getCFRecords(config AlertsConfig) (map[string][]string, error) {
 			cloudflare.ListDNSRecordsParams{})
 		if err != nil {
 			err = fmt.Errorf("error getting Cloudflare dns records for zone %s ... %v ", zoneName, err.Error())
-			return results, err
+			sendErrorEmails(config, err)
+			continue
 		}
 
 		for _, ss := range config.CFContainsStrings {
@@ -211,7 +213,7 @@ func getCFRecords(config AlertsConfig) (map[string][]string, error) {
 		}
 	}
 
-	return results, nil
+	return results
 }
 
 func sendAnEmail(emailMsg ses.Message, recipient *string, config AlertsConfig) error {
@@ -332,12 +334,7 @@ func handler(config AlertsConfig) error {
 		return err
 	}
 
-	// Let AWS retry if there is an error connecting to Cloudflare
-	cfRecords, err := getCFRecords(config)
-	if err != nil {
-		sendErrorEmails(config, err)
-		return err
-	}
+	cfRecords := getCFRecords(config)
 
 	if len(cfRecords) < 1 {
 		log.Printf("\n No records found in Cloudflare containing any of these: %v", config.CFContainsStrings)
