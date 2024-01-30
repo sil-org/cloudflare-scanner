@@ -2,166 +2,69 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"log"
 	"os"
 	"strings"
 
 	"github.com/aws/aws-lambda-go/lambda"
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/ses"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/service/appconfigdata"
+	"github.com/aws/aws-sdk-go-v2/service/ses"
+	sesTypes "github.com/aws/aws-sdk-go-v2/service/ses/types"
 	"github.com/cloudflare/cloudflare-go"
 )
 
-// SESCharSet is the set to use for AWS SES emails
-const SESCharSet = "UTF-8"
+// SESDefaultCharSet is the default set to use for AWS SES emails
+const SESDefaultCharSet = "UTF-8"
 
-// EnvListDelimiter is the environment variable for
-// the character that splits environment variables with list values
-const EnvListDelimiter = ","
-
-// EnvKeyCFApiToken is the environment variable for
-// the API token needed to access the Cloudflare API
-const EnvKeyCFApiToken = "CF_API_TOKEN"
-
-// EnvKeyCFContainsStrings is the environment variable for
-// the substrings (comma separated) that this app should be using to identify
-// certain Cloudflare record names
-const EnvKeyCFContainsStrings = "CF_CONTAINS_STRINGS"
-
-// EnvKeyCFZoneNames is the environment variable for
-// the zone names you want the app to get records from (comma separated list)
-const EnvKeyCFZoneNames = "CF_ZONE_NAMES"
-
-// EnvKeySESSubject is the environment variable for
-// the subject text of the emails that get sent out
-const EnvKeySESSubject = "SES_SUBJECT"
-
-// EnvKeySESReturnToAddress is the environment variable for
-// the return-to address of the emails that get sent out
-const EnvKeySESReturnToAddress = "SES_RETURN_TO_ADDR"
-
-// EnvKeySESRecipients is the environment variable for
-// the list of email addresses (comma separated) that the emails should get sent to
-const EnvKeySESRecipients = "SES_RECIPIENT_EMAILS"
-
-// EnvKeyAWSRegion is the environment variable for
-// the AWS region where the lambda should ne run
-const EnvKeyAWSRegion = "SES_AWS_REGION"
-
-func getSESAWSRegion() string {
-	region := os.Getenv(EnvKeyAWSRegion)
-	if region == "" {
-		region = "us-east-1"
-	}
-	return region
-}
-
-func splitStringList(compoundValue string) []string {
-	initialList := strings.Split(compoundValue, EnvListDelimiter)
-	output := []string{}
-	for _, s := range initialList {
-		output = append(output, strings.Trim(s, " "))
-	}
-	return output
-}
-
-func getZoneNames(a *AlertsConfig) error {
-	gluedZoneNames := os.Getenv(EnvKeyCFZoneNames)
-	if gluedZoneNames == "" {
-		return fmt.Errorf("required value missing for environment variable %s", EnvKeyCFZoneNames)
-	}
-	a.CFZoneNames = splitStringList(gluedZoneNames)
-
-	return nil
-}
-
-func getRecipientAddresses(a *AlertsConfig) error {
-	gluedRecipients := os.Getenv(EnvKeySESRecipients)
-	if gluedRecipients == "" {
-		return fmt.Errorf("required value missing for environment variable %s", EnvKeySESRecipients)
-	}
-
-	a.RecipientEmails = splitStringList(gluedRecipients)
-	return nil
-}
-
-func getCFContainsStrings(a *AlertsConfig) error {
-	gluedSearchStrings := os.Getenv(EnvKeyCFContainsStrings)
-	if gluedSearchStrings == "" {
-		return fmt.Errorf("required value missing for environment variable %s", EnvKeyCFContainsStrings)
-	}
-
-	a.CFContainsStrings = splitStringList(gluedSearchStrings)
-	return nil
-}
-
-func getRequiredString(envKey string, configEntry *string) error {
-	if *configEntry != "" {
-		return nil
-	}
-
-	value := os.Getenv(envKey)
-	if value == "" {
-		return fmt.Errorf("required value missing for environment variable %s", envKey)
-	}
-	*configEntry = value
-
-	return nil
-}
-
-func (a *AlertsConfig) init() error {
-	if err := getRequiredString(EnvKeyCFApiToken, &a.CFApiToken); err != nil {
-		return err
-	}
-
-	if len(a.CFContainsStrings) < 1 {
-		if err := getCFContainsStrings(a); err != nil {
-			return err
-		}
-	}
-
-	if len(a.CFZoneNames) < 1 {
-		if err := getZoneNames(a); err != nil {
-			return err
-		}
-	}
-
-	if len(a.RecipientEmails) < 1 {
-		if err := getRecipientAddresses(a); err != nil {
-			return err
-		}
-	}
-
-	if a.SESCharSet == "" {
-		a.SESCharSet = SESCharSet
-	}
-
-	if err := getRequiredString(EnvKeySESReturnToAddress, &a.SESReturnToAddr); err != nil {
-		return err
-	}
-
-	if a.SESAWSRegion == "" {
-		a.SESAWSRegion = getSESAWSRegion()
-	}
-
-	if err := getRequiredString(EnvKeySESSubject, &a.SESSubjectText); err != nil {
-		return err
-	}
-
-	return nil
+type Config struct {
+	SESCharSet      string
+	SESReturnToAddr string
+	Alerts          []AlertsConfig
 }
 
 type AlertsConfig struct {
-	CFApiToken        string   `json:"CFApiToken"`
-	CFZoneNames       []string `json:"CFZoneNames"`
-	CFContainsStrings []string `json:"CFContainsString"`
-	SESAWSRegion      string   `json:"SESAWSRegion"`
-	SESCharSet        string   `json:"SESCharSet"`
-	SESReturnToAddr   string   `json:"SESReturnToAddr"`
-	SESSubjectText    string   `json:"SESSubjectText"`
-	RecipientEmails   []string `json:"RecipientEmails"`
+	Title             string
+	CFApiToken        string
+	CFZoneNames       []string
+	CFContainsStrings []string
+	SESSubjectText    string
+	RecipientEmails   []string
+}
+
+func getConfigFromAWS() (*Config, error) {
+	ctx := context.Background()
+	cfg, err := config.LoadDefaultConfig(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	applicationIdentifier := getEnv("APPLICATION_IDENTIFIER", "cloudflare scanner")
+	configProfileIdentifier := getEnv("CONFIG_PROFILE_IDENTIFIER", "default")
+	environment := getEnv("ENVIRONMENT", "prod")
+
+	client := appconfigdata.NewFromConfig(cfg)
+	session, err := client.StartConfigurationSession(ctx, &appconfigdata.StartConfigurationSessionInput{
+		ApplicationIdentifier:          &applicationIdentifier,
+		ConfigurationProfileIdentifier: &configProfileIdentifier,
+		EnvironmentIdentifier:          &environment,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	configuration, err := client.GetLatestConfiguration(ctx, &appconfigdata.GetLatestConfigurationInput{
+		ConfigurationToken: session.InitialConfigurationToken,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	var c Config
+	return &c, json.Unmarshal(configuration.Configuration, &c)
 }
 
 func getCFRecordsWithSubstring(substring, zoneName string, recs []cloudflare.DNSRecord, results map[string][]string) {
@@ -180,21 +83,21 @@ func getCFRecordsWithSubstring(substring, zoneName string, recs []cloudflare.DNS
 	}
 }
 
-func getCFRecords(config AlertsConfig) map[string][]string {
-	api, err := cloudflare.NewWithAPIToken(config.CFApiToken)
+func getCFRecords(config Config, alertConfig AlertsConfig) map[string][]string {
+	api, err := cloudflare.NewWithAPIToken(alertConfig.CFApiToken)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	log.Printf("Starting scan for %v", config.CFZoneNames)
+	log.Printf("Starting scan for %v", alertConfig.CFZoneNames)
 
 	results := map[string][]string{}
 
-	for _, zoneName := range config.CFZoneNames {
+	for _, zoneName := range alertConfig.CFZoneNames {
 		zoneID, err := api.ZoneIDByName(zoneName)
 		if err != nil {
 			err = fmt.Errorf("error getting Cloudflare zone %s ... %v ", zoneName, err.Error())
-			sendErrorEmails(config, err)
+			sendErrorEmails(config, alertConfig, err)
 			continue
 		}
 
@@ -203,11 +106,11 @@ func getCFRecords(config AlertsConfig) map[string][]string {
 			cloudflare.ListDNSRecordsParams{})
 		if err != nil {
 			err = fmt.Errorf("error getting Cloudflare dns records for zone %s ... %v ", zoneName, err.Error())
-			sendErrorEmails(config, err)
+			sendErrorEmails(config, alertConfig, err)
 			continue
 		}
 
-		for _, ss := range config.CFContainsStrings {
+		for _, ss := range alertConfig.CFContainsStrings {
 			ss = strings.Trim(ss, " ")
 			getCFRecordsWithSubstring(ss, zoneName, recs, results)
 		}
@@ -216,31 +119,26 @@ func getCFRecords(config AlertsConfig) map[string][]string {
 	return results
 }
 
-func sendAnEmail(emailMsg ses.Message, recipient *string, config AlertsConfig) error {
-	recipients := []*string{recipient}
+func sendAnEmail(emailMsg sesTypes.Message, sender, recipient string) error {
+	recipients := []string{recipient}
 
 	input := &ses.SendEmailInput{
-		Destination: &ses.Destination{
+		Destination: &sesTypes.Destination{
 			ToAddresses: recipients,
 		},
 		Message: &emailMsg,
-		Source:  aws.String(config.SESReturnToAddr),
+		Source:  aws.String(sender),
 	}
 
-	sess, err := session.NewSession(&aws.Config{
-		Region: aws.String(config.SESAWSRegion),
-	},
-	)
-
 	// Create an SES session.
-	svc := ses.New(sess)
-	result, err := svc.SendEmail(input)
+	svc := ses.New(ses.Options{})
+	result, err := svc.SendEmail(context.Background(), input)
 	log.Println(result)
 	return err
 }
 
-func sendEmails(config AlertsConfig, cfRecords map[string][]string) {
-	msg := fmt.Sprintf("%s\n", config.SESSubjectText)
+func sendEmails(config Config, alertConfig AlertsConfig, cfRecords map[string][]string) {
+	msg := fmt.Sprintf("%s\n", alertConfig.SESSubjectText)
 	for zone, ps := range cfRecords {
 		msg = fmt.Sprintf("%s\n Those found in %s", msg, zone)
 		for _, p := range ps {
@@ -248,17 +146,17 @@ func sendEmails(config AlertsConfig, cfRecords map[string][]string) {
 		}
 	}
 
-	subject := config.SESSubjectText
+	subject := alertConfig.SESSubjectText
 
-	emailMsg := getSESMessage(config, subject, msg)
+	emailMsg := makeSESMessage(config.SESCharSet, subject, msg)
 
 	// Only report the last email error
 	lastError := ""
 	badRecipients := []string{}
 
 	// Send emails to one recipient at a time to avoid one bad email sabotaging it all
-	for _, address := range config.RecipientEmails {
-		err := sendAnEmail(emailMsg, &address, config)
+	for _, address := range alertConfig.RecipientEmails {
+		err := sendAnEmail(emailMsg, address, config.SESReturnToAddr)
 		if err != nil {
 			lastError = err.Error()
 			badRecipients = append(badRecipients, address)
@@ -268,19 +166,19 @@ func sendEmails(config AlertsConfig, cfRecords map[string][]string) {
 	logLastError(config, lastError, badRecipients)
 }
 
-func sendErrorEmails(config AlertsConfig, err error) {
+func sendErrorEmails(config Config, alertConfig AlertsConfig, err error) {
 	subject := "error attempting to scan Cloudflare."
 	msg := fmt.Sprintf("The Cloudflare scanner failed with the following error. \n%s", err)
 
-	emailMsg := getSESMessage(config, subject, msg)
+	emailMsg := makeSESMessage(config.SESCharSet, subject, msg)
 
 	// Only report the last email error
 	lastError := ""
 	badRecipients := []string{}
 
 	// Send emails to one recipient at a time to avoid one bad email sabotaging it all
-	for _, address := range config.RecipientEmails {
-		err := sendAnEmail(emailMsg, &address, config)
+	for _, address := range alertConfig.RecipientEmails {
+		err := sendAnEmail(emailMsg, address, config.SESReturnToAddr)
 		if err != nil {
 			lastError = err.Error()
 			badRecipients = append(badRecipients, address)
@@ -290,31 +188,34 @@ func sendErrorEmails(config AlertsConfig, err error) {
 	logLastError(config, lastError, badRecipients)
 }
 
-func getSESMessage(config AlertsConfig, subject, msg string) ses.Message {
-	charSet := config.SESCharSet
+func makeSESMessage(charSet, subject, msg string) sesTypes.Message {
+	if charSet == "" {
+		charSet = SESDefaultCharSet
+	}
 
-	subjContent := ses.Content{
+	subjContent := sesTypes.Content{
 		Charset: &charSet,
 		Data:    &subject,
 	}
 
-	msgContent := ses.Content{
+	msgContent := sesTypes.Content{
 		Charset: &charSet,
 		Data:    &msg,
 	}
 
-	msgBody := ses.Body{
+	msgBody := sesTypes.Body{
 		Text: &msgContent,
 	}
 
-	emailMsg := ses.Message{}
-	emailMsg.SetSubject(&subjContent)
-	emailMsg.SetBody(&msgBody)
+	emailMsg := sesTypes.Message{
+		Subject: &subjContent,
+		Body:    &msgBody,
+	}
 
 	return emailMsg
 }
 
-func logLastError(config AlertsConfig, lastError string, badRecipients []string) {
+func logLastError(config Config, lastError string, badRecipients []string) {
 	if lastError == "" {
 		return
 	}
@@ -329,22 +230,34 @@ func logLastError(config AlertsConfig, lastError string, badRecipients []string)
 	log.Print(msg)
 }
 
-func handler(config AlertsConfig) error {
-	if err := config.init(); err != nil {
+func handler() error {
+	config, err := getConfigFromAWS()
+	if err != nil {
 		return err
 	}
 
-	cfRecords := getCFRecords(config)
+	for _, alertConfig := range config.Alerts {
+		log.Printf("Starting scan for alert config %q", alertConfig.Title)
+		cfRecords := getCFRecords(*config, alertConfig)
 
-	if len(cfRecords) < 1 {
-		log.Printf("\n No records found in Cloudflare containing any of these: %v", config.CFContainsStrings)
-		return nil
+		if len(cfRecords) < 1 {
+			log.Printf("\n No records found in Cloudflare containing any of these: %v", alertConfig.CFContainsStrings)
+			return nil
+		}
+
+		sendEmails(*config, alertConfig, cfRecords)
 	}
-
-	sendEmails(config, cfRecords)
 	return nil
 }
 
 func main() {
 	lambda.Start(handler)
+}
+
+func getEnv(key, defaultValue string) string {
+	value := os.Getenv(key)
+	if value == "" {
+		return defaultValue
+	}
+	return value
 }

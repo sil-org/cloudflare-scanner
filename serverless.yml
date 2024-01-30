@@ -46,13 +46,9 @@ package:
 functions:
   alerts:
     environment:
-      CF_API_TOKEN: ${env:CF_API_TOKEN}
-      CF_CONTAINS_STRINGS: ${env:CF_CONTAINS_STRINGS}
-      CF_ZONE_NAMES: ${env:CF_ZONE_NAMES}
-      SES_AWS_REGION: ${env:AWS_REGION}
-      SES_SUBJECT: ${env:SES_SUBJECT}
-      SES_RETURN_TO_ADDR: ${env:SES_RETURN_TO_ADDR}
-      SES_RECIPIENT_EMAILS: ${env:SES_RECIPIENT_EMAILS}
+      APPLICATION_IDENTIFIER: ${self:custom.app_name}
+      CONFIG_PROFILE_IDENTIFIER: 'default'
+      ENVIRONMENT: ${sls:stage}
     handler: bootstrap
     timeout: 300
     events:
@@ -61,39 +57,3 @@ functions:
        - schedule: cron(30 12,14,18,20 ? * MON,TUE,WED,THU,FRI *)
     tags:
       name: lambda_function_1-${self:custom.app_name}-${self:custom.customer}-production
-
-  alerts-usa:
-    environment:
-      CF_API_TOKEN: ${env:CF_API_TOKEN}
-      CF_CONTAINS_STRINGS: ${env:CF_CONTAINS_STRINGS_USA}
-      CF_ZONE_NAMES: ${env:CF_ZONE_NAMES}
-      SES_AWS_REGION: ${env:AWS_REGION}
-      SES_SUBJECT: ${env:SES_SUBJECT}
-      SES_RETURN_TO_ADDR: ${env:SES_RETURN_TO_ADDR}
-      SES_RECIPIENT_EMAILS: ${env:SES_RECIPIENT_EMAILS_USA}
-    handler: bootstrap
-    timeout: 300
-    events:
-      # cron(Minutes Hours Day-of-month Month Day-of-week Year)
-      # Either `day-of-month` or `day-of-week` must be a question mark (?)
-      - schedule: cron(30 12,14,18,20 ? * MON,TUE,WED,THU,FRI *)
-    tags:
-      name: lambda_function_2-${self:custom.app_name}-${self:custom.customer}-production
-
-  alerts-eth:
-    environment:
-      CF_API_TOKEN: ${env:CF_API_TOKEN_2}
-      CF_CONTAINS_STRINGS: ${env:CF_CONTAINS_STRINGS}
-      CF_ZONE_NAMES: ${env:CF_ZONE_NAMES_2}
-      SES_AWS_REGION: ${env:AWS_REGION}
-      SES_SUBJECT: ${env:SES_SUBJECT}
-      SES_RETURN_TO_ADDR: ${env:SES_RETURN_TO_ADDR}
-      SES_RECIPIENT_EMAILS: ${env:SES_RECIPIENT_EMAILS}
-    handler: bootstrap
-    timeout: 300
-    events:
-      # cron(Minutes Hours Day-of-month Month Day-of-week Year)
-      # Either `day-of-month` or `day-of-week` must be a question mark (?)
-      - schedule: cron(30 12,14,18,20 ? * MON,TUE,WED,THU,FRI *)
-    tags:
-      name: lambda_function_3-${self:custom.app_name}-${self:custom.customer}-production
