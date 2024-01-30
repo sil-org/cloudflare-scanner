@@ -15,7 +15,7 @@ func TestGetCFRecords(t *testing.T) {
 	}
 
 	for _, alertConfig := range config.Alerts {
-		cfRecords := getCFRecords(config, alertConfig)
+		cfRecords := getCFRecords(*config, alertConfig)
 		if len(cfRecords) < 1 {
 			log.Printf("\n No records found in Cloudflare containing any of these: %v", alertConfig.CFContainsStrings)
 		} else {
