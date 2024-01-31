@@ -8,7 +8,7 @@ import (
 func TestGetCFRecords(t *testing.T) {
 	t.Skip("Only run this in local development")
 
-	config, err := getConfigFromAWS()
+	config, err := newScanner()
 	if err != nil {
 		t.Errorf("Failed initializing config for test: %v", err)
 		return

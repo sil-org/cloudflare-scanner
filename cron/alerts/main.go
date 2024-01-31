@@ -20,13 +20,13 @@ import (
 // SESDefaultCharSet is the default set to use for AWS SES emails
 const SESDefaultCharSet = "UTF-8"
 
-type Config struct {
+type Scanner struct {
 	SESCharSet      string
 	SESReturnToAddr string
-	Alerts          []AlertsConfig
+	Alerts          []Alert
 }
 
-type AlertsConfig struct {
+type Alert struct {
 	Title             string
 	CFApiToken        string
 	CFZoneNames       []string
@@ -35,7 +35,7 @@ type AlertsConfig struct {
 	RecipientEmails   []string
 }
 
-func getConfigFromAWS() (*Config, error) {
+func newScanner() (*Scanner, error) {
 	ctx := context.Background()
 	cfg, err := config.LoadDefaultConfig(ctx)
 	if err != nil {
@@ -63,8 +63,8 @@ func getConfigFromAWS() (*Config, error) {
 		return nil, err
 	}
 
-	var c Config
-	return &c, json.Unmarshal(configuration.Configuration, &c)
+	var scanner Scanner
+	return &scanner, json.Unmarshal(configuration.Configuration, &scanner)
 }
 
 func getCFRecordsWithSubstring(substring, zoneName string, recs []cloudflare.DNSRecord, results map[string][]string) {
@@ -83,21 +83,21 @@ func getCFRecordsWithSubstring(substring, zoneName string, recs []cloudflare.DNS
 	}
 }
 
-func getCFRecords(config Config, alertConfig AlertsConfig) map[string][]string {
-	api, err := cloudflare.NewWithAPIToken(alertConfig.CFApiToken)
+func (s *Scanner) getCFRecords(alert Alert) map[string][]string {
+	api, err := cloudflare.NewWithAPIToken(alert.CFApiToken)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	log.Printf("Starting scan for %v", alertConfig.CFZoneNames)
+	log.Printf("Starting scan for %v", alert.CFZoneNames)
 
 	results := map[string][]string{}
 
-	for _, zoneName := range alertConfig.CFZoneNames {
+	for _, zoneName := range alert.CFZoneNames {
 		zoneID, err := api.ZoneIDByName(zoneName)
 		if err != nil {
 			err = fmt.Errorf("error getting Cloudflare zone %s ... %v ", zoneName, err.Error())
-			sendErrorEmails(config, alertConfig, err)
+			s.sendErrorEmails(alert, err)
 			continue
 		}
 
@@ -106,11 +106,11 @@ func getCFRecords(config Config, alertConfig AlertsConfig) map[string][]string {
 			cloudflare.ListDNSRecordsParams{})
 		if err != nil {
 			err = fmt.Errorf("error getting Cloudflare dns records for zone %s ... %v ", zoneName, err.Error())
-			sendErrorEmails(config, alertConfig, err)
+			s.sendErrorEmails(alert, err)
 			continue
 		}
 
-		for _, ss := range alertConfig.CFContainsStrings {
+		for _, ss := range alert.CFContainsStrings {
 			ss = strings.Trim(ss, " ")
 			getCFRecordsWithSubstring(ss, zoneName, recs, results)
 		}
@@ -137,8 +137,8 @@ func sendAnEmail(emailMsg sesTypes.Message, sender, recipient string) error {
 	return err
 }
 
-func sendEmails(config Config, alertConfig AlertsConfig, cfRecords map[string][]string) {
-	msg := fmt.Sprintf("%s\n", alertConfig.SESSubjectText)
+func (s *Scanner) sendEmails(alert Alert, cfRecords map[string][]string) {
+	msg := fmt.Sprintf("%s\n", alert.SESSubjectText)
 	for zone, ps := range cfRecords {
 		msg = fmt.Sprintf("%s\n Those found in %s", msg, zone)
 		for _, p := range ps {
@@ -146,46 +146,46 @@ func sendEmails(config Config, alertConfig AlertsConfig, cfRecords map[string][]
 		}
 	}
 
-	subject := alertConfig.SESSubjectText
+	subject := alert.SESSubjectText
 
-	emailMsg := makeSESMessage(config.SESCharSet, subject, msg)
+	emailMsg := makeSESMessage(s.SESCharSet, subject, msg)
 
 	// Only report the last email error
 	lastError := ""
 	badRecipients := []string{}
 
 	// Send emails to one recipient at a time to avoid one bad email sabotaging it all
-	for _, address := range alertConfig.RecipientEmails {
-		err := sendAnEmail(emailMsg, address, config.SESReturnToAddr)
+	for _, address := range alert.RecipientEmails {
+		err := sendAnEmail(emailMsg, address, s.SESReturnToAddr)
 		if err != nil {
 			lastError = err.Error()
 			badRecipients = append(badRecipients, address)
 		}
 	}
 
-	logLastError(config, lastError, badRecipients)
+	s.logLastError(lastError, badRecipients)
 }
 
-func sendErrorEmails(config Config, alertConfig AlertsConfig, err error) {
+func (s *Scanner) sendErrorEmails(alert Alert, err error) {
 	subject := "error attempting to scan Cloudflare."
 	msg := fmt.Sprintf("The Cloudflare scanner failed with the following error. \n%s", err)
 
-	emailMsg := makeSESMessage(config.SESCharSet, subject, msg)
+	emailMsg := makeSESMessage(s.SESCharSet, subject, msg)
 
 	// Only report the last email error
 	lastError := ""
 	badRecipients := []string{}
 
 	// Send emails to one recipient at a time to avoid one bad email sabotaging it all
-	for _, address := range alertConfig.RecipientEmails {
-		err := sendAnEmail(emailMsg, address, config.SESReturnToAddr)
+	for _, address := range alert.RecipientEmails {
+		err := sendAnEmail(emailMsg, address, s.SESReturnToAddr)
 		if err != nil {
 			lastError = err.Error()
 			badRecipients = append(badRecipients, address)
 		}
 	}
 
-	logLastError(config, lastError, badRecipients)
+	s.logLastError(lastError, badRecipients)
 }
 
 func makeSESMessage(charSet, subject, msg string) sesTypes.Message {
@@ -215,7 +215,7 @@ func makeSESMessage(charSet, subject, msg string) sesTypes.Message {
 	return emailMsg
 }
 
-func logLastError(config Config, lastError string, badRecipients []string) {
+func (s *Scanner) logLastError(lastError string, badRecipients []string) {
 	if lastError == "" {
 		return
 	}
@@ -223,7 +223,7 @@ func logLastError(config Config, lastError string, badRecipients []string) {
 	addresses := strings.Join(badRecipients, ", ")
 	msg := fmt.Sprintf(
 		"\nError sending Cloudflare scanner email from %s to \n %s: \n %s",
-		*aws.String(config.SESReturnToAddr),
+		*aws.String(s.SESReturnToAddr),
 		addresses,
 		lastError,
 	)
@@ -231,21 +231,21 @@ func logLastError(config Config, lastError string, badRecipients []string) {
 }
 
 func handler() error {
-	config, err := getConfigFromAWS()
+	scanner, err := newScanner()
 	if err != nil {
 		return err
 	}
 
-	for _, alertConfig := range config.Alerts {
-		log.Printf("Starting scan for alert config %q", alertConfig.Title)
-		cfRecords := getCFRecords(*config, alertConfig)
+	for _, alert := range scanner.Alerts {
+		log.Printf("Starting scan for alert %q", alert.Title)
+		cfRecords := scanner.getCFRecords(alert)
 
 		if len(cfRecords) < 1 {
-			log.Printf("\n No records found in Cloudflare containing any of these: %v", alertConfig.CFContainsStrings)
+			log.Printf("\n No records found in Cloudflare containing any of these: %v", alert.CFContainsStrings)
 			return nil
 		}
 
-		sendEmails(*config, alertConfig, cfRecords)
+		scanner.sendEmails(alert, cfRecords)
 	}
 	return nil
 }
