@@ -131,10 +131,18 @@ func sendAnEmail(emailMsg sesTypes.Message, sender, recipient string) error {
 	}
 
 	// Create an SES session.
-	svc := ses.New(ses.Options{})
+	ctx := context.Background()
+	cfg, err := config.LoadDefaultConfig(ctx)
+	if err != nil {
+		return err
+	}
+	svc := ses.NewFromConfig(cfg)
 	result, err := svc.SendEmail(context.Background(), input)
+	if err != nil {
+		return fmt.Errorf("send email failed: %w", err)
+	}
 	log.Println(result)
-	return err
+	return nil
 }
 
 func (a *Alert) sendEmails(cfRecords map[string][]string) {
