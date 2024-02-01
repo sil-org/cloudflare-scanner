@@ -31,6 +31,8 @@ type Alert struct {
 	CFApiToken        string
 	CFZoneNames       []string
 	CFContainsStrings []string
+	SESCharSet        string
+	SESReturnToAddr   string
 	SESSubjectText    string
 	RecipientEmails   []string
 }
@@ -42,7 +44,7 @@ func newScanner() (*Scanner, error) {
 		return nil, err
 	}
 
-	applicationIdentifier := getEnv("APPLICATION_IDENTIFIER", "cloudflare scanner")
+	applicationIdentifier := getEnv("APPLICATION_IDENTIFIER", "cloudflare-scanner")
 	configProfileIdentifier := getEnv("CONFIG_PROFILE_IDENTIFIER", "default")
 	environment := getEnv("ENVIRONMENT", "prod")
 
@@ -68,36 +70,34 @@ func newScanner() (*Scanner, error) {
 }
 
 func getCFRecordsWithSubstring(substring, zoneName string, recs []cloudflare.DNSRecord, results map[string][]string) {
-	log.Printf("Records with '%s' in the name in zone: %s", substring, zoneName)
-
-	subRecs := []string{}
+	log.Printf("searching for %q in zone %q", substring, zoneName)
+	var subRecs []string
 	for _, r := range recs {
 		if len(r.Name) > 0 && strings.Contains(r.Name, substring) {
-			log.Print(" ", r.Name)
+			log.Printf("found %q in zone %q", substring, zoneName)
 			subRecs = append(subRecs, r.Name+" ... "+r.Content)
 		}
 	}
 	if len(subRecs) > 0 {
-		log.Print("-----")
 		results[zoneName] = subRecs
 	}
 }
 
-func (s *Scanner) getCFRecords(alert Alert) map[string][]string {
-	api, err := cloudflare.NewWithAPIToken(alert.CFApiToken)
+func (a *Alert) getCFRecords() map[string][]string {
+	api, err := cloudflare.NewWithAPIToken(a.CFApiToken)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	log.Printf("Starting scan for %v", alert.CFZoneNames)
+	log.Printf("Starting scan for %v", a.CFZoneNames)
 
 	results := map[string][]string{}
 
-	for _, zoneName := range alert.CFZoneNames {
+	for _, zoneName := range a.CFZoneNames {
 		zoneID, err := api.ZoneIDByName(zoneName)
 		if err != nil {
-			err = fmt.Errorf("error getting Cloudflare zone %s ... %v ", zoneName, err.Error())
-			s.sendErrorEmails(alert, err)
+			err = fmt.Errorf("error getting Cloudflare zone %s: %w ", zoneName, err)
+			a.sendErrorEmails(err)
 			continue
 		}
 
@@ -105,12 +105,12 @@ func (s *Scanner) getCFRecords(alert Alert) map[string][]string {
 		recs, _, err := api.ListDNSRecords(context.Background(), cloudflare.ZoneIdentifier(zoneID),
 			cloudflare.ListDNSRecordsParams{})
 		if err != nil {
-			err = fmt.Errorf("error getting Cloudflare dns records for zone %s ... %v ", zoneName, err.Error())
-			s.sendErrorEmails(alert, err)
+			err = fmt.Errorf("error getting Cloudflare dns records for zone %s: %w ", zoneName, err)
+			a.sendErrorEmails(err)
 			continue
 		}
 
-		for _, ss := range alert.CFContainsStrings {
+		for _, ss := range a.CFContainsStrings {
 			ss = strings.Trim(ss, " ")
 			getCFRecordsWithSubstring(ss, zoneName, recs, results)
 		}
@@ -137,8 +137,8 @@ func sendAnEmail(emailMsg sesTypes.Message, sender, recipient string) error {
 	return err
 }
 
-func (s *Scanner) sendEmails(alert Alert, cfRecords map[string][]string) {
-	msg := fmt.Sprintf("%s\n", alert.SESSubjectText)
+func (a *Alert) sendEmails(cfRecords map[string][]string) {
+	msg := fmt.Sprintf("%s\n", a.SESSubjectText)
 	for zone, ps := range cfRecords {
 		msg = fmt.Sprintf("%s\n Those found in %s", msg, zone)
 		for _, p := range ps {
@@ -146,46 +146,46 @@ func (s *Scanner) sendEmails(alert Alert, cfRecords map[string][]string) {
 		}
 	}
 
-	subject := alert.SESSubjectText
+	subject := a.SESSubjectText
 
-	emailMsg := makeSESMessage(s.SESCharSet, subject, msg)
+	emailMsg := makeSESMessage(a.SESCharSet, subject, msg)
 
 	// Only report the last email error
 	lastError := ""
-	badRecipients := []string{}
+	var badRecipients []string
 
 	// Send emails to one recipient at a time to avoid one bad email sabotaging it all
-	for _, address := range alert.RecipientEmails {
-		err := sendAnEmail(emailMsg, address, s.SESReturnToAddr)
+	for _, address := range a.RecipientEmails {
+		err := sendAnEmail(emailMsg, address, a.SESReturnToAddr)
 		if err != nil {
 			lastError = err.Error()
 			badRecipients = append(badRecipients, address)
 		}
 	}
 
-	s.logLastError(lastError, badRecipients)
+	a.logLastError(lastError, badRecipients)
 }
 
-func (s *Scanner) sendErrorEmails(alert Alert, err error) {
+func (a *Alert) sendErrorEmails(err error) {
 	subject := "error attempting to scan Cloudflare."
 	msg := fmt.Sprintf("The Cloudflare scanner failed with the following error. \n%s", err)
 
-	emailMsg := makeSESMessage(s.SESCharSet, subject, msg)
+	emailMsg := makeSESMessage(a.SESCharSet, subject, msg)
 
 	// Only report the last email error
 	lastError := ""
-	badRecipients := []string{}
+	var badRecipients []string
 
 	// Send emails to one recipient at a time to avoid one bad email sabotaging it all
-	for _, address := range alert.RecipientEmails {
-		err := sendAnEmail(emailMsg, address, s.SESReturnToAddr)
+	for _, address := range a.RecipientEmails {
+		err := sendAnEmail(emailMsg, address, a.SESReturnToAddr)
 		if err != nil {
 			lastError = err.Error()
 			badRecipients = append(badRecipients, address)
 		}
 	}
 
-	s.logLastError(lastError, badRecipients)
+	a.logLastError(lastError, badRecipients)
 }
 
 func makeSESMessage(charSet, subject, msg string) sesTypes.Message {
@@ -215,19 +215,17 @@ func makeSESMessage(charSet, subject, msg string) sesTypes.Message {
 	return emailMsg
 }
 
-func (s *Scanner) logLastError(lastError string, badRecipients []string) {
+func (a *Alert) logLastError(lastError string, badRecipients []string) {
 	if lastError == "" {
 		return
 	}
 
 	addresses := strings.Join(badRecipients, ", ")
-	msg := fmt.Sprintf(
-		"\nError sending Cloudflare scanner email from %s to \n %s: \n %s",
-		*aws.String(s.SESReturnToAddr),
+	log.Printf("Error sending Cloudflare scanner email from %q to %q: %s",
+		*aws.String(a.SESReturnToAddr),
 		addresses,
 		lastError,
 	)
-	log.Print(msg)
 }
 
 func handler() error {
@@ -238,14 +236,22 @@ func handler() error {
 
 	for _, alert := range scanner.Alerts {
 		log.Printf("Starting scan for alert %q", alert.Title)
-		cfRecords := scanner.getCFRecords(alert)
+
+		if alert.SESCharSet == "" {
+			alert.SESCharSet = scanner.SESCharSet
+		}
+		if alert.SESReturnToAddr == "" {
+			alert.SESReturnToAddr = scanner.SESReturnToAddr
+		}
+
+		cfRecords := alert.getCFRecords()
 
 		if len(cfRecords) < 1 {
-			log.Printf("\n No records found in Cloudflare containing any of these: %v", alert.CFContainsStrings)
+			log.Printf("No records found in Cloudflare containing any of these: %v", alert.CFContainsStrings)
 			return nil
 		}
 
-		scanner.sendEmails(alert, cfRecords)
+		alert.sendEmails(cfRecords)
 	}
 	return nil
 }

@@ -8,18 +8,18 @@ import (
 func TestGetCFRecords(t *testing.T) {
 	t.Skip("Only run this in local development")
 
-	config, err := newScanner()
+	scanner, err := newScanner()
 	if err != nil {
-		t.Errorf("Failed initializing config for test: %v", err)
+		t.Errorf("Failed initializing scanner for test: %v", err)
 		return
 	}
 
-	for _, alertConfig := range config.Alerts {
-		cfRecords := getCFRecords(*config, alertConfig)
+	for _, alert := range scanner.Alerts {
+		cfRecords := alert.getCFRecords()
 		if len(cfRecords) < 1 {
-			log.Printf("\n No records found in Cloudflare containing any of these: %v", alertConfig.CFContainsStrings)
+			log.Printf("No records found in Cloudflare containing any of these: %v", alert.CFContainsStrings)
 		} else {
-			log.Printf("\n %d records found containing: %v", len(cfRecords), alertConfig.CFContainsStrings)
+			log.Printf("%d records found containing: %v", len(cfRecords), alert.CFContainsStrings)
 		}
 	}
 }
