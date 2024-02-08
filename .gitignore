@@ -6,10 +6,8 @@ bootstrap
 
 # local creds and stuff
 aws.credentials
-aws.env
 *.aes
-local.env
-.env
+*.env
 
 # dev tools metadata
 .idea
