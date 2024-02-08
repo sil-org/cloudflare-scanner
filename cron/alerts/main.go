@@ -256,10 +256,9 @@ func handler() error {
 
 		if len(cfRecords) < 1 {
 			log.Printf("No records found in Cloudflare containing any of these: %v", alert.CFContainsStrings)
-			return nil
+		} else {
+			alert.sendEmails(cfRecords)
 		}
-
-		alert.sendEmails(cfRecords)
 	}
 	return nil
 }
