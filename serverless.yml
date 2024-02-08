@@ -31,7 +31,7 @@ provider:
         - "appconfig:GetLatestConfiguration"
         - "appconfig:StartConfigurationSession"
         Resource:
-        - "arn:aws:appconfig:${self:provider.region}:${AWS::AccountId}:application/${self:custom.app_name}/environment/${sls:stage}/configuration/${custom.config_profile}"
+        - "arn:aws:appconfig:${aws:region}:${aws:accountId}:application/${env:APP_ID}/environment/${env:ENV_ID}/configuration/${env:CONFIG_ID}"
   deploymentBucket:
     tags:
       managed_by: serverless
@@ -54,7 +54,7 @@ functions:
   alerts:
     environment:
       APPLICATION_IDENTIFIER: ${self:custom.app_name}
-      CONFIG_PROFILE_IDENTIFIER: ${custom.config_profile}
+      CONFIG_PROFILE_IDENTIFIER: ${self:custom.config_profile}
       ENVIRONMENT: ${sls:stage}
     handler: bootstrap
     timeout: 300
