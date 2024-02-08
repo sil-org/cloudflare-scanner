@@ -24,8 +24,14 @@ provider:
       statements:
       - Effect: "Allow"
         Action:
-          - "ses:SendEmail"
+        - "ses:SendEmail"
         Resource: "*"
+      - Effect: "Allow"
+        Action:
+        - "appconfig:GetLatestConfiguration"
+        - "appconfig:StartConfigurationSession"
+        Resource:
+        - "arn:aws:appconfig:${self:provider.region}:${AWS::AccountId}:application/${self:custom.app_name}/environment/${sls:stage}/configuration/${custom.config_profile}"
   deploymentBucket:
     tags:
       managed_by: serverless
@@ -37,6 +43,7 @@ provider:
 custom:
   app_name: cloudflare-scanner
   customer: gtis
+  config_profile: default
 
 package:
   patterns:
@@ -47,7 +54,7 @@ functions:
   alerts:
     environment:
       APPLICATION_IDENTIFIER: ${self:custom.app_name}
-      CONFIG_PROFILE_IDENTIFIER: 'default'
+      CONFIG_PROFILE_IDENTIFIER: ${custom.config_profile}
       ENVIRONMENT: ${sls:stage}
     handler: bootstrap
     timeout: 300
