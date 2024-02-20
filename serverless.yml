@@ -61,6 +61,6 @@ functions:
     events:
       # cron(Minutes Hours Day-of-month Month Day-of-week Year)
       # Either `day-of-month` or `day-of-week` must be a question mark (?)
-       - schedule: cron(30 12,14,18,20 ? * MON,TUE,WED,THU,FRI *)
+       - schedule: cron(30 0/2 ? * MON,TUE,WED,THU,FRI *)
     tags:
       name: lambda_function_1-${self:custom.app_name}-${self:custom.customer}-production
