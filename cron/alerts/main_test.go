@@ -23,3 +23,10 @@ func TestGetCFRecords(t *testing.T) {
 		}
 	}
 }
+
+func TestHandler(t *testing.T) {
+	err := handler()
+	if err != nil {
+		t.Errorf("%s", err)
+	}
+}

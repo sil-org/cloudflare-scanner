@@ -89,7 +89,7 @@ func (a *Alert) getCFRecords() map[string][]string {
 		log.Fatal(err)
 	}
 
-	log.Printf("Starting scan for %v", a.CFZoneNames)
+	log.Printf("scanning zones: %s", strings.Join(a.CFZoneNames, ", "))
 
 	results := map[string][]string{}
 
@@ -137,11 +137,10 @@ func sendAnEmail(emailMsg sesTypes.Message, sender, recipient string) error {
 		return err
 	}
 	svc := ses.NewFromConfig(cfg)
-	result, err := svc.SendEmail(context.Background(), input)
+	_, err = svc.SendEmail(context.Background(), input)
 	if err != nil {
 		return fmt.Errorf("send email failed: %w", err)
 	}
-	log.Println(result)
 	return nil
 }
 
@@ -166,12 +165,15 @@ func (a *Alert) sendEmails(cfRecords map[string][]string) {
 	for _, address := range a.RecipientEmails {
 		err := sendAnEmail(emailMsg, address, a.SESReturnToAddr)
 		if err != nil {
+			log.Printf("error sending alert email %s: %s", msg, err)
 			lastError = err.Error()
 			badRecipients = append(badRecipients, address)
 		}
 	}
 
-	a.logLastError(lastError, badRecipients)
+	if lastError != "" {
+		a.logLastError(lastError, badRecipients)
+	}
 }
 
 func (a *Alert) sendErrorEmails(err error) {
@@ -188,12 +190,15 @@ func (a *Alert) sendErrorEmails(err error) {
 	for _, address := range a.RecipientEmails {
 		err := sendAnEmail(emailMsg, address, a.SESReturnToAddr)
 		if err != nil {
+			log.Printf("error sending error email %s: %s", msg, err)
 			lastError = err.Error()
 			badRecipients = append(badRecipients, address)
 		}
 	}
 
-	a.logLastError(lastError, badRecipients)
+	if lastError != "" {
+		a.logLastError(lastError, badRecipients)
+	}
 }
 
 func makeSESMessage(charSet, subject, msg string) sesTypes.Message {
@@ -224,10 +229,6 @@ func makeSESMessage(charSet, subject, msg string) sesTypes.Message {
 }
 
 func (a *Alert) logLastError(lastError string, badRecipients []string) {
-	if lastError == "" {
-		return
-	}
-
 	addresses := strings.Join(badRecipients, ", ")
 	log.Printf("Error sending Cloudflare scanner email from %q to %q: %s",
 		*aws.String(a.SESReturnToAddr),
