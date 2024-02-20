@@ -23,3 +23,12 @@ func TestGetCFRecords(t *testing.T) {
 		}
 	}
 }
+
+func TestHandler(t *testing.T) {
+	t.Skip("Only run this in local development")
+
+	err := handler()
+	if err != nil {
+		t.Errorf("%s", err)
+	}
+}
