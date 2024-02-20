@@ -173,7 +173,7 @@ func (a *Alert) sendEmails(cfRecords map[string][]string) {
 	}
 
 	if lastError != "" {
-		a.logLastError(lastError, badRecipients)
+		a.logEmailError(lastError, badRecipients)
 	}
 }
 
@@ -198,7 +198,7 @@ func (a *Alert) sendErrorEmails(err error) {
 	}
 
 	if lastError != "" {
-		a.logLastError(lastError, badRecipients)
+		a.logEmailError(lastError, badRecipients)
 	}
 }
 
@@ -229,12 +229,12 @@ func makeSESMessage(charSet, subject, msg string) sesTypes.Message {
 	return emailMsg
 }
 
-func (a *Alert) logLastError(lastError string, badRecipients []string) {
+func (a *Alert) logEmailError(errorMessage string, badRecipients []string) {
 	addresses := strings.Join(badRecipients, ", ")
 	log.Printf("Error sending Cloudflare scanner email from %q to %q: %s",
 		*aws.String(a.SESReturnToAddr),
 		addresses,
-		lastError,
+		errorMessage,
 	)
 }
 
