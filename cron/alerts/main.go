@@ -141,6 +141,7 @@ func sendAnEmail(emailMsg sesTypes.Message, sender, recipient string) error {
 	if err != nil {
 		return fmt.Errorf("send email failed: %w", err)
 	}
+	log.Printf("sent %q email to %q", *emailMsg.Subject.Data, recipient)
 	return nil
 }
 
