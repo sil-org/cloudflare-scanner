@@ -1,0 +1,26 @@
+name: Continuous Integration
+
+on:
+  push:
+
+env:
+  AWS_REGION: ${{ vars.AWS_REGION }}
+  AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+  AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+  APP_ID: ${{ secrets.APP_ID }}
+  ENV_ID: ${{ secrets.ENV_ID }}
+  CONFIG_ID: ${{ secrets.CONFIG_ID }}
+
+jobs:
+  test:
+    name: Test and Deploy
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Unit tests
+        run: docker-compose -f "action-services.yml" run app bash -c "./scripts/test.sh"
+
+      - name: Deploy lambda
+        if: github.ref_name == 'main'
+        run: docker-compose -f "action-services.yml" run app
