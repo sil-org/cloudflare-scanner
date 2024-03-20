@@ -2,9 +2,7 @@ version: "3"
 
 services:
   app:
-    build:
-      context: .
-      dockerfile: Dockerfile
+    build: .
     environment:
       AWS_REGION: $AWS_REGION
       AWS_ACCESS_KEY_ID: $AWS_ACCESS_KEY_ID
