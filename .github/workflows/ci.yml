@@ -13,21 +13,14 @@ env:
 
 jobs:
   test:
-    name: Test
+    name: Test and Deploy
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
-      - name: Run tests
+      - name: Unit tests
         run: docker-compose -f "action-services.yml" run app bash -c "./scripts/test.sh"
 
-  deploy:
-    name: Deploy
-    if: github.ref_name == 'main'
-    needs: test
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
       - name: Deploy lambda
+        if: github.ref_name == 'main'
         run: docker-compose -f "action-services.yml" run app
