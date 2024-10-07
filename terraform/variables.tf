@@ -1,11 +1,16 @@
 variable "aws_region" {
-  default = "us-east-1"
+  description = "A valid AWS region where this lambda will be deployed"
+  default     = "us-east-1"
 }
 
 variable "aws_access_key" {
+  description = "Access Key ID for user with permissions to create the Serverless deployment user"
+  default     = null
 }
 
 variable "aws_secret_key" {
+  description = "Secret access Key ID for user with permissions to create the Serverless deployment user"
+  default     = null
 }
 
 /*

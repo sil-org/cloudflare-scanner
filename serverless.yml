@@ -1,12 +1,14 @@
 service: cloudflare-scanner
 
+frameworkVersion: ^3.7
+
 provider:
   name: aws
   runtime: provided.al2
   stage: prod
-  timeout: 30
+  timeout: 300
   versionFunctions: false
-  memorySize: 512
+  memorySize: 128
   logRetentionInDays: 14
   tags:
     managed_by: serverless

@@ -5,12 +5,11 @@
 bootstrap
 
 # local creds and stuff
-aws.credentials
 *.aes
 *.env
 
 # dev tools metadata
-.idea
+.idea/
 
 # Terraform
 .terraform/
