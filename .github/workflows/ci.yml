@@ -2,8 +2,8 @@ name: Continuous Integration
 
 on:
   push:
-    paths:
-    - '!terraform/**'
+    branches: [ '**' ]
+    paths-ignore: [ 'terraform/**' ]
 
 env:
   AWS_REGION: ${{ vars.AWS_REGION }}
