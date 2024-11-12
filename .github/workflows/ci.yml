@@ -13,6 +13,10 @@ env:
   ENV_ID: ${{ secrets.ENV_ID }}
   CONFIG_ID: ${{ secrets.CONFIG_ID }}
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
   test:
     name: Test and Deploy
