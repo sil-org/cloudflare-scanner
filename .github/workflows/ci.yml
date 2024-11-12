@@ -2,8 +2,8 @@ name: Continuous Integration
 
 on:
   push:
-    paths:
-    - '!terraform/**'
+    branches: [ '**' ]
+    paths-ignore: [ 'terraform/**' ]
 
 env:
   AWS_REGION: ${{ vars.AWS_REGION }}
@@ -12,6 +12,10 @@ env:
   APP_ID: ${{ secrets.APP_ID }}
   ENV_ID: ${{ secrets.ENV_ID }}
   CONFIG_ID: ${{ secrets.CONFIG_ID }}
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
 
 jobs:
   test:
