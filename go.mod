@@ -1,6 +1,7 @@
 module github.org/silinternational/cloudflare-scanner
 
 go 1.21
+toolchain go1.23.7
 
 require (
 	github.com/aws/aws-lambda-go v1.41.0
@@ -28,7 +29,7 @@ require (
 	github.com/hashicorp/go-cleanhttp v0.5.2 // indirect
 	github.com/hashicorp/go-retryablehttp v0.7.7 // indirect
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
-	golang.org/x/net v0.33.0 // indirect
-	golang.org/x/text v0.21.0 // indirect
+	golang.org/x/net v0.36.0 // indirect
+	golang.org/x/text v0.22.0 // indirect
 	golang.org/x/time v0.3.0 // indirect
 )
