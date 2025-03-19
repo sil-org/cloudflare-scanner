@@ -3,6 +3,10 @@
 Look through Cloudflare records to find the ones that contain a certain substring in their name and
 then send emails with that list via AWS SES.
 
+## AWS SAM
+
+This project uses SAM to deploy to AWS. For development, [install the SAM CLI](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/install-sam-cli.html).
+
 ## Credential Rotation
 
 ### AWS Serverless User

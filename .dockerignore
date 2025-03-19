@@ -1,7 +1,0 @@
-# Ignore everything
-*
-
-# Whitelist required files
-!go.*
-!*.go
-!serverless.yml

@@ -5,28 +5,38 @@ on:
     branches: [ '**' ]
     paths-ignore: [ 'terraform/**' ]
 
-env:
-  AWS_REGION: ${{ vars.AWS_REGION }}
-  AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-  AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-  APP_ID: ${{ secrets.APP_ID }}
-  ENV_ID: ${{ secrets.ENV_ID }}
-  CONFIG_ID: ${{ secrets.CONFIG_ID }}
-
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: false
 
 jobs:
   test:
-    name: Test and Deploy
+    name: Test
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+    - uses: actions/checkout@v4
+    - uses: actions/setup-go@v5
+      with:
+        go-version-file: 'src/go.mod'
+    - name: Unit tests
+      run: go test -C src -v
 
-      - name: Unit tests
-        run: docker compose -f "action-services.yml" run app bash -c "./scripts/test.sh"
-
-      - name: Deploy lambda
-        if: github.ref_name == 'main'
-        run: docker compose -f "action-services.yml" run app
+  deploy:
+    name: Deploy
+    runs-on: ubuntu-latest
+    if: github.ref_name == 'main'
+    steps:
+    - uses: actions/setup-python@v5
+    - uses: aws-actions/setup-sam@v2
+    - uses: aws-actions/configure-aws-credentials@v4
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ${{ vars.AWS_REGION }}
+    - run: sam build --use-container
+    - run: |
+        sam deploy --no-confirm-changeset --no-fail-on-empty-changeset \
+        --parameter-overrides \
+          ParameterKey=AppId,ParameterValue=${{ secrets.APP_ID }} \
+          ParameterKey=EnvId,ParameterValue=${{ secrets.ENV_ID }} \
+          ParameterKey=ConfigId,ParameterValue=${{ secrets.CONFIG_ID }}

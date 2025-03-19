@@ -1,5 +1,5 @@
-# Serverless directories
-.serverless
+# SAM
+.aws-sam/
 
 # Go output binary
 bootstrap
