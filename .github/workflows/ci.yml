@@ -28,6 +28,7 @@ jobs:
     name: Deploy
     runs-on: ubuntu-latest
     if: github.ref_name == 'main'
+    needs: test
     steps:
     - uses: actions/checkout@v4
     - uses: actions/setup-python@v5
