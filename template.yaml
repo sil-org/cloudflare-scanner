@@ -50,6 +50,11 @@ Resources:
           - appconfig:StartConfigurationSession
           Resource:
           - !Sub arn:aws:appconfig:${AWS::Region}:${AWS::AccountId}:application/${AppId}/environment/${EnvId}/configuration/${ConfigId}
+  CloudflareScanLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub "/aws/lambda/${AlertFunction}"
+      RetentionInDays: 60
 
 Parameters:
   AppId:
@@ -65,4 +70,4 @@ Parameters:
 Outputs:
   CloudflareScanFunctionArn:
     Description: ARN of the Cloudflare Scan function
-    Value: !GetAtt CloudflareScannerFunction.Arn
+    Value: !GetAtt AlertFunction.Arn
