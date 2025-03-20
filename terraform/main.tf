@@ -25,7 +25,8 @@ module "serverless-user" {
           "cloudformation:CreateStack",
           "cloudformation:CreateUploadBucket",
           "cloudformation:DeleteStack",
-          "cloudformation:Describe*",
+          "cloudformation:DescribeStacks",
+          "cloudformation:DescribeStackEvents",
           "cloudformation:UpdateStack",
           "cloudformation:DescribeChangeSet",
           "cloudformation:DeleteChangeSet",
@@ -34,7 +35,7 @@ module "serverless-user" {
         ]
         Effect = "Allow"
         Resource = [
-          "arn:aws:cloudformation:${var.aws_region}:*:stack/${var.app_name}",
+          "arn:aws:cloudformation:${var.aws_region}:*:stack/${var.app_name}*",
           "arn:aws:cloudformation:${var.aws_region}:*:stack/aws-sam-cli-managed-default/*",
           "arn:aws:cloudformation:${var.aws_region}:aws:transform/Serverless-2016-10-31",
         ]
@@ -134,8 +135,11 @@ module "serverless-user" {
           "s3:PutBucketPublicAccessBlock",
           "s3:PutBucketTagging"
         ]
-        Effect   = "Allow"
-        Resource = "arn:aws:s3:::${var.app_name}*"
+        Effect = "Allow"
+        Resource = [
+          "arn:aws:s3:::${var.app_name}*",
+          "arn:aws:s3:::aws-sam-cli-managed-default-samclisourcebucket-*"
+        ]
       },
       {
         Action = [
