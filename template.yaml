@@ -65,4 +65,4 @@ Parameters:
 Outputs:
   CloudflareScanFunctionArn:
     Description: ARN of the Cloudflare Scan function
-    Value: !GetAtt CloudflareScannerFunction.Arn
+    Value: !GetAtt AlertFunction.Arn
