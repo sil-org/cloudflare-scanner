@@ -9,6 +9,9 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: false
 
+env:
+  SAM_CLI_TELEMETRY: "0" # disable AWS telemetry in the SAM CLI
+
 jobs:
   test:
     name: Test
@@ -26,6 +29,7 @@ jobs:
     runs-on: ubuntu-latest
     if: github.ref_name == 'main'
     steps:
+    - uses: actions/checkout@v4
     - uses: actions/setup-python@v5
     - uses: aws-actions/setup-sam@v2
     - uses: aws-actions/configure-aws-credentials@v4
