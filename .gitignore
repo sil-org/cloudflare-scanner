@@ -7,6 +7,7 @@ bootstrap
 # local creds and stuff
 *.aes
 *.env
+!*example.env
 
 # dev tools metadata
 .idea/

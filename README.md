@@ -7,6 +7,26 @@ then send emails with that list via AWS SES.
 
 This project uses SAM to deploy to AWS. For development, [install the SAM CLI](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/install-sam-cli.html).
 
+## AWS CDK
+
+**Experimental**
+
+To build and deploy:
+
+* Build the Go binary: 
+
+```sh
+cd src
+CGO_ENABLED=0 go build -tags lambda.norpc -ldflags="-s -w" -o bin/bootstrap ./main.go
+```
+
+* Deploy using CDK:
+
+```sh
+docker compose run --rm cd bash
+cdk deploy
+```
+
 ## Credential Rotation
 
 ### AWS Serverless User
