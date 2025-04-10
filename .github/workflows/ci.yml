@@ -57,4 +57,4 @@ jobs:
           APP_ID: ${{ vars.APP_ID }}
           ENV_ID: ${{ vars.ENV_ID }}
           CONFIG_ID: ${{ vars.CONFIG_ID }}
-        run: cdk deploy
+        run: cd cdk && cdk deploy
