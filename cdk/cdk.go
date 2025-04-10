@@ -25,8 +25,7 @@ func NewCdkStack(scope constructs.Construct, id string, props *CdkStackProps) aw
 	}
 	stack := awscdk.NewStack(scope, &id, &sprops)
 
-	region := *sprops.Env.Region
-	accountID := *sprops.Env.Account
+	region := os.Getenv("AWS_REGION")
 	appID := os.Getenv("APP_ID")
 	envID := os.Getenv("ENV_ID")
 	configID := os.Getenv("CONFIG_ID")
@@ -72,8 +71,8 @@ func NewCdkStack(scope constructs.Construct, id string, props *CdkStackProps) aw
 		Resources: jsii.Strings("*"), // Adjust this to restrict access if needed
 	}))
 
-	appConfigArn := fmt.Sprintf("arn:aws:appconfig:%s:%s:application/%s/environment/%s/configuration/%s",
-		region, accountID, appID, envID, configID)
+	appConfigArn := fmt.Sprintf("arn:aws:appconfig:%s:*:application/%s/environment/%s/configuration/%s",
+		region, appID, envID, configID)
 	function.AddToRolePolicy(awsiam.NewPolicyStatement(&awsiam.PolicyStatementProps{
 		Actions: jsii.Strings(
 			"appconfig:GetLatestConfiguration",
@@ -90,9 +89,11 @@ func main() {
 
 	app := awscdk.NewApp(nil)
 
-	NewCdkStack(app, "CdkStack", &CdkStackProps{
+	NewCdkStack(app, "CloudflareScanner", &CdkStackProps{
 		awscdk.StackProps{
-			Env: env(os.Getenv("AWS_ACCOUNT"), os.Getenv("AWS_REGION")),
+			Env: &awscdk.Environment{
+				Region: jsii.String(os.Getenv("AWS_REGION")),
+			},
 			Tags: &map[string]*string{
 				"managed_by":        jsii.String("cdk"),
 				"itse_app_name":     jsii.String("cloudflare-scanner"),
@@ -103,13 +104,4 @@ func main() {
 	})
 
 	app.Synth(nil)
-}
-
-// env determines the AWS environment (account+region) in which our stack is to
-// be deployed. For more information see: https://docs.aws.amazon.com/cdk/latest/guide/environments.html
-func env(accountID, region string) *awscdk.Environment {
-	return &awscdk.Environment{
-		Account: &accountID,
-		Region:  &region,
-	}
 }

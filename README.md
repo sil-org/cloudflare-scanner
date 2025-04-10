@@ -9,22 +9,18 @@ This project uses SAM to deploy to AWS. For development, [install the SAM CLI](h
 
 ## AWS CDK
 
-**Experimental**
-
 To build and deploy:
 
 * Build the Go binary:
 
 ```sh
-cd src
-CGO_ENABLED=0 go build -tags lambda.norpc -ldflags="-s -w" -o bin/bootstrap ./main.go
+CGO_ENABLED=0 go build -C src -tags lambda.norpc -ldflags="-s -w" -o bin/bootstrap ./main.go
 ```
 
 * Deploy using CDK:
 
 ```sh
-docker compose run --rm cdk bash
-cdk deploy
+docker compose run --rm cdk cdk deploy
 ```
 
 ## Credential Rotation
