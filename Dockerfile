@@ -11,7 +11,7 @@ RUN <<EOF
   rm go.tar.gz
   ln -s /usr/local/go/bin/go /usr/local/bin/go
 
-  npm install -g aws-cdk
+  npm install --ignore-scripts --global aws-cdk
 EOF
 
 RUN adduser user
