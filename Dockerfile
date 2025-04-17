@@ -1,20 +1,25 @@
 FROM node:22
 
-RUN <<EOF
-  curl --silent --show-error --fail --proto "=https" --output awscliv2.zip https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip
-  unzip awscliv2.zip
-  rm awscliv2.zip
-  ./aws/install
+ENV GO_VERSION=1.24.2
 
-  curl --silent --show-error --fail --proto "=https" --location --output go.tar.gz https://go.dev/dl/go1.24.2.linux-amd64.tar.gz
-  tar -C /usr/local -xzf go.tar.gz
-  rm go.tar.gz
+ADD https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip .
+ADD https://go.dev/dl/go${GO_VERSION}.linux-amd64.tar.gz .
+
+RUN <<EOF
+  unzip awscli-exe-linux-x86_64.zip
+  rm awscli-exe-linux-x86_64.zip
+  ./aws/install
+  rm -rf ./aws
+
+  tar -C /usr/local -xzf go${GO_VERSION}.linux-amd64.tar.gz
+  rm go${GO_VERSION}.linux-amd64.tar.gz
   ln -s /usr/local/go/bin/go /usr/local/bin/go
 
   npm install --ignore-scripts --global aws-cdk
+
+  adduser user
 EOF
 
-RUN adduser user
 USER user
 
 WORKDIR /cdk
