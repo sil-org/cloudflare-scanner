@@ -17,12 +17,17 @@ jobs:
     name: Test
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
-    - uses: actions/setup-go@v5
-      with:
-        go-version-file: 'src/go.mod'
-    - name: Unit tests
-      run: go test -C src -v
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: 'src/go.mod'
+          cache-dependency-path: |
+            src/go.sum
+            cdk/go.sum
+
+      - name: Unit tests
+        run: go test -C src -v
 
   deploy:
     name: Deploy
@@ -30,20 +35,29 @@ jobs:
     if: github.ref_name == 'main'
     needs: test
     steps:
-    - uses: actions/checkout@v4
-    - uses: aws-actions/setup-sam@v2
-      with:
-        use-installer: true
-        token: ${{ secrets.GITHUB_TOKEN }}
-    - uses: aws-actions/configure-aws-credentials@v4
-      with:
-        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        aws-region: ${{ vars.AWS_REGION }}
-    - run: sam build --use-container
-    - run: |
-        sam deploy --no-confirm-changeset --no-fail-on-empty-changeset \
-        --parameter-overrides \
-          ParameterKey=AppId,ParameterValue=${{ secrets.APP_ID }} \
-          ParameterKey=EnvId,ParameterValue=${{ secrets.ENV_ID }} \
-          ParameterKey=ConfigId,ParameterValue=${{ secrets.CONFIG_ID }}
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install AWS CDK
+        run: npm install -g aws-cdk
+
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ vars.AWS_REGION }}
+
+      - name: Build
+        run: CGO_ENABLED=0 go build -C src -tags lambda.norpc -ldflags="-s -w" -o bin/bootstrap main.go
+
+      - name: Deploy
+        env:
+          APP_ID: ${{ vars.APP_ID }}
+          ENV_ID: ${{ vars.ENV_ID }}
+          CONFIG_ID: ${{ vars.CONFIG_ID }}
+        run: cd cdk && cdk deploy --require-approval never
