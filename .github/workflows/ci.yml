@@ -9,9 +9,6 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: false
 
-env:
-  SAM_CLI_TELEMETRY: "0" # disable AWS telemetry in the SAM CLI
-
 jobs:
   test:
     name: Test
