@@ -3,7 +3,7 @@
 Look through Cloudflare records to find the ones that contain a certain substring in their name and
 then send emails with that list via AWS SES.
 
-## AWS SAM
+## AWS CDK
 
 This project uses CDK to deploy to AWS. For development, use Docker Compose or [install the CDK CLI](https://docs.aws.amazon.com/cdk/v2/guide/getting-started.html#getting-started-install).
 
