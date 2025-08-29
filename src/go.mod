@@ -9,7 +9,7 @@ require (
 	github.com/aws/aws-sdk-go-v2 v1.38.2
 	github.com/aws/aws-sdk-go-v2/config v1.31.2
 	github.com/aws/aws-sdk-go-v2/service/appconfigdata v1.23.0
-	github.com/aws/aws-sdk-go-v2/service/ses v1.33.2
+	github.com/aws/aws-sdk-go-v2/service/ses v1.34.0
 	github.com/cloudflare/cloudflare-go v0.115.0
 )
 
