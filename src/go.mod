@@ -1,4 +1,4 @@
-module github.org/silinternational/cloudflare-scanner
+module github.org/sil-org/cloudflare-scanner
 
 go 1.23.0
 
