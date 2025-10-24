@@ -7,6 +7,7 @@ import (
 	"log"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/aws/aws-lambda-go/lambda"
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -15,6 +16,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/ses"
 	sesTypes "github.com/aws/aws-sdk-go-v2/service/ses/types"
 	"github.com/cloudflare/cloudflare-go"
+	"github.com/getsentry/sentry-go"
 )
 
 // SESDefaultCharSet is the default set to use for AWS SES emails
@@ -266,7 +268,23 @@ func handler() error {
 }
 
 func main() {
+	if dsn := os.Getenv("SENTRY_DSN"); dsn != "" {
+		initSentry(dsn)
+		defer sentry.Flush(2 * time.Second)
+	}
+
 	lambda.Start(handler)
+}
+
+func initSentry(dsn string) {
+	err := sentry.Init(sentry.ClientOptions{
+		Dsn:         dsn,
+		EnableLogs:  true,
+		Environment: getEnv("APP_ENV", "production"),
+	})
+	if err != nil {
+		log.Printf("sentry.Init failure: %s", err)
+	}
 }
 
 func getEnv(key, defaultValue string) string {
