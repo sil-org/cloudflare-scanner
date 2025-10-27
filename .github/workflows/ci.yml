@@ -57,5 +57,6 @@ jobs:
           APP_ID: ${{ vars.APP_ID }}
           ENV_ID: ${{ vars.ENV_ID }}
           CONFIG_ID: ${{ vars.CONFIG_ID }}
+          APP_ENV: ${{ vars.APP_ENV }}
           SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
         run: cd cdk && cdk deploy --require-approval never
