@@ -1,20 +1,11 @@
-/*
- * Create IAM user for CDK
- */
 resource "aws_iam_user" "cdk" {
   name = "${var.app_name}-cdk"
 }
 
-/*
- * Create Access Key/Secret for user
- */
 resource "aws_iam_access_key" "cdk" {
   user = aws_iam_user.cdk.name
 }
 
-/*
- * Create IAM policy
- */
 resource "aws_iam_policy" "cdk" {
   name        = "${var.app_name}-cdk"
   description = "CDK deployment policy"
