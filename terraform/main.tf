@@ -8,7 +8,7 @@ resource "aws_iam_access_key" "cdk" {
 
 resource "aws_iam_user_policy" "cdk" {
   name = "${var.app_name}-cdk"
-  user = aws_iam_user.cdk
+  user = aws_iam_user.cdk.name
 
   policy = jsonencode({
     Version = "2012-10-17"
