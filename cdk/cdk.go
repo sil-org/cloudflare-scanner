@@ -44,7 +44,7 @@ func NewCdkStack(scope constructs.Construct, id string, props *CdkStackProps) aw
 			"ENV_ID":     &envID,
 			"CONFIG_ID":  &configID,
 			"SENTRY_DSN": jsii.String(os.Getenv("SENTRY_DSN")),
-			"APP_ENV":    jsii.String(getEnv("APP_ENV", "production")),
+			"APP_ENV":    jsii.String(getEnv("APP_ENV", "prod")),
 		},
 		FunctionName:  &functionName,
 		Handler:       jsii.String("bootstrap"),
