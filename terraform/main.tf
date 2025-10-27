@@ -1,25 +1,30 @@
+/*
+ * Create IAM user for CDK
+ */
+resource "aws_iam_user" "cdk" {
+  name = "${var.app_name}-cdk"
+}
 
 /*
- * Create IAM user for Serverless framework to use to deploy the lambda function
+ * Create Access Key/Secret for user
  */
-module "serverless-user" {
-  source  = "sil-org/serverless-user/aws"
-  version = "~> 0.4.2"
+resource "aws_iam_access_key" "cdk" {
+  user = aws_iam_user.cdk.name
+}
 
-  app_name = var.app_name
+/*
+ * Create IAM policy
+ */
+resource "aws_iam_policy" "cdk" {
+  name        = "${var.app_name}-cdk"
+  description = "CDK deployment policy"
 
-  policy_override = jsonencode({
+  policy = jsonencode({
     Version = "2012-10-17"
-    Statement = [
-      {
-        Effect = "Allow"
-        Action = [
-          "sts:AssumeRole",
-        ]
-        Resource = [
-          "arn:aws:iam::*:role/cdk-*"
-        ]
-      }
-    ],
+    Statement = [{
+      Effect   = "Allow"
+      Action   = "sts:AssumeRole"
+      Resource = "arn:aws:iam::*:role/cdk-*"
+    }]
   })
 }
