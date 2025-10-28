@@ -3,10 +3,12 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/aws/aws-lambda-go/lambda"
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -15,6 +17,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/ses"
 	sesTypes "github.com/aws/aws-sdk-go-v2/service/ses/types"
 	"github.com/cloudflare/cloudflare-go"
+	"github.com/getsentry/sentry-go"
 )
 
 // SESDefaultCharSet is the default set to use for AWS SES emails
@@ -178,6 +181,8 @@ func (a *Alert) sendEmails(cfRecords map[string][]string) {
 }
 
 func (a *Alert) sendErrorEmails(err error) {
+	sentry.CaptureException(err)
+
 	subject := "error attempting to scan Cloudflare."
 	msg := fmt.Sprintf("The Cloudflare scanner failed with the following error. \n%s", err)
 
@@ -231,16 +236,19 @@ func makeSESMessage(charSet, subject, msg string) sesTypes.Message {
 
 func (a *Alert) logEmailError(errorMessage string, badRecipients []string) {
 	addresses := strings.Join(badRecipients, ", ")
-	log.Printf("Error sending Cloudflare scanner email from %q to %q: %s",
+	msg := fmt.Sprintf("Error sending Cloudflare scanner email from %q to %q: %s",
 		*aws.String(a.SESReturnToAddr),
 		addresses,
 		errorMessage,
 	)
+	log.Println(msg)
+	sentry.CaptureException(errors.New(msg))
 }
 
 func handler() error {
 	scanner, err := newScanner()
 	if err != nil {
+		sentry.CaptureException(err)
 		return err
 	}
 
@@ -266,7 +274,22 @@ func handler() error {
 }
 
 func main() {
+	if dsn := os.Getenv("SENTRY_DSN"); dsn != "" {
+		initSentry(dsn)
+		defer sentry.Flush(2 * time.Second)
+	}
+
 	lambda.Start(handler)
+}
+
+func initSentry(dsn string) {
+	err := sentry.Init(sentry.ClientOptions{
+		Dsn:         dsn,
+		Environment: getEnv("APP_ENV", "prod"),
+	})
+	if err != nil {
+		log.Printf("sentry.Init failure: %s", err)
+	}
 }
 
 func getEnv(key, defaultValue string) string {

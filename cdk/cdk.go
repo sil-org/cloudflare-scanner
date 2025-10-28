@@ -40,9 +40,11 @@ func NewCdkStack(scope constructs.Construct, id string, props *CdkStackProps) aw
 	function := awslambda.NewFunction(stack, &functionName, &awslambda.FunctionProps{
 		Code: awslambda.Code_FromAsset(jsii.String("../src/bin"), nil),
 		Environment: &map[string]*string{
-			"APP_ID":    &appID,
-			"ENV_ID":    &envID,
-			"CONFIG_ID": &configID,
+			"APP_ID":     &appID,
+			"ENV_ID":     &envID,
+			"CONFIG_ID":  &configID,
+			"SENTRY_DSN": jsii.String(os.Getenv("SENTRY_DSN")),
+			"APP_ENV":    jsii.String(getEnv("APP_ENV", "prod")),
 		},
 		FunctionName:  &functionName,
 		Handler:       jsii.String("bootstrap"),
@@ -98,10 +100,17 @@ func main() {
 				"managed_by":        jsii.String("cdk"),
 				"itse_app_name":     jsii.String("cloudflare-scanner"),
 				"itse_app_customer": jsii.String("gtis"),
-				"itse_app_env":      jsii.String("production"),
+				"itse_app_env":      jsii.String(getEnv("APP_ENV", "production")),
 			},
 		},
 	})
 
 	app.Synth(nil)
+}
+
+func getEnv(key, defaultValue string) string {
+	if value := os.Getenv(key); value != "" {
+		return value
+	}
+	return defaultValue
 }
