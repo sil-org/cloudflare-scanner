@@ -30,9 +30,9 @@ or simply `cdk deploy` if you installed the CLI.
 1. Run a new plan on Terraform Cloud
    1. On the Create Run screen click `Additional Planning Options`
    2. Under `Replace Resources` choose `aws_iam_access_key.cdk`
-3. Review the new plan and apply if it is correct
-4. Copy the new key and secret from the Terraform output into Github Repository Secrets, overwriting the old values
-5. Manually rerun the most recent workflow run on the main branch
+2. Review the new plan and apply if it is correct
+3. Copy the new key and secret from the Terraform output into Github Repository Secrets, overwriting the old values
+4. Manually rerun the most recent workflow run on the main branch
 
 ### Cloudflare
 
