@@ -11,7 +11,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/appconfigdata v1.23.5
 	github.com/aws/aws-sdk-go-v2/service/ses v1.34.5
 	github.com/cloudflare/cloudflare-go v0.116.0
-	github.com/getsentry/sentry-go v0.36.1
+	github.com/getsentry/sentry-go v0.36.2
 )
 
 require (
