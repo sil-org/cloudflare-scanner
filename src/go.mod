@@ -6,7 +6,7 @@ require (
 	github.com/aws/aws-lambda-go v1.52.0
 	github.com/aws/aws-sdk-go-v2 v1.41.1
 	github.com/aws/aws-sdk-go-v2/config v1.32.7
-	github.com/aws/aws-sdk-go-v2/service/appconfigdata v1.23.14
+	github.com/aws/aws-sdk-go-v2/service/appconfigdata v1.23.18
 	github.com/aws/aws-sdk-go-v2/service/ses v1.34.18
 	github.com/cloudflare/cloudflare-go v0.116.0
 	github.com/getsentry/sentry-go v0.42.0
