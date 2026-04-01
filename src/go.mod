@@ -4,7 +4,7 @@ go 1.25
 
 require (
 	github.com/aws/aws-lambda-go v1.52.0
-	github.com/aws/aws-sdk-go-v2 v1.41.3
+	github.com/aws/aws-sdk-go-v2 v1.41.5
 	github.com/aws/aws-sdk-go-v2/config v1.32.11
 	github.com/aws/aws-sdk-go-v2/service/appconfigdata v1.23.20
 	github.com/aws/aws-sdk-go-v2/service/ses v1.34.20
