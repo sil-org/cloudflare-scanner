@@ -94,7 +94,8 @@ func main() {
 	NewCdkStack(app, "CloudflareScanner", &CdkStackProps{
 		awscdk.StackProps{
 			Env: &awscdk.Environment{
-				Region: jsii.String(os.Getenv("AWS_REGION")),
+				Account: jsii.String(os.Getenv("AWS_ACCOUNT_ID")),
+				Region:  jsii.String(os.Getenv("AWS_REGION")),
 			},
 			Tags: &map[string]*string{
 				"managed_by":        jsii.String("cdk"),

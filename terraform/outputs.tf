@@ -1,9 +1,3 @@
-
-output "serverless-access-key-id" {
-  value = aws_iam_access_key.cdk.id
-}
-
-output "serverless-secret-access-key" {
-  value     = aws_iam_access_key.cdk.secret
-  sensitive = true
+output "cd_role_arn" {
+  value = aws_iam_role.cd.arn
 }

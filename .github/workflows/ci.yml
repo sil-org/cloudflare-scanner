@@ -9,6 +9,9 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: false
 
+permissions:
+  contents: read
+
 jobs:
   test:
     name: Test
@@ -31,6 +34,9 @@ jobs:
     runs-on: ubuntu-latest
     if: github.ref_name == 'main'
     needs: test
+    permissions:
+      contents: read
+      id-token: write
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -44,16 +50,18 @@ jobs:
         run: npm install -g aws-cdk
 
       - uses: aws-actions/configure-aws-credentials@v6
+        id: configure-aws
         with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ vars.AWS_REGION }}
+          role-to-assume: ${{ vars.AWS_CD_ROLE_ARN }}
 
       - name: Build
         run: CGO_ENABLED=0 go build -C src -tags lambda.norpc -ldflags="-s -w" -o bin/bootstrap main.go
 
       - name: Deploy
         env:
+          AWS_ACCOUNT_ID: ${{ steps.configure-aws.outputs.aws-account-id }}
+          AWS_REGION: ${{ vars.AWS_REGION }}
           APP_ID: ${{ vars.APP_ID }}
           ENV_ID: ${{ vars.ENV_ID }}
           CONFIG_ID: ${{ vars.CONFIG_ID }}
