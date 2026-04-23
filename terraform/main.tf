@@ -34,10 +34,26 @@ resource "aws_iam_role_policy" "cd" {
 
   policy = jsonencode({
     Version = "2012-10-17"
-    Statement = [{
-      Effect   = "Allow"
-      Action   = "sts:AssumeRole"
-      Resource = "arn:aws:iam::${local.aws_account}:role/cdk-*"
-    }]
+    Statement = [
+      {
+        Effect   = "Allow"
+        Action   = "sts:AssumeRole"
+        Resource = "arn:aws:iam::${local.aws_account}:role/cdk-*"
+      },
+      {
+        Sid      = "SendEmailForActions"
+        Effect   = "Allow"
+        Action   = "ses:SendEmail"
+        Resource = "*"
+        Condition = {
+          StringEquals = {
+            "ses:FromAddress" = "gtis_itse_alerts@groups.sil.org"
+          }
+          "ForAllValues:StringEquals" = {
+            "ses:Recipients" = "gtis_itse_support@sil.org"
+          }
+        }
+      },
+    ]
   })
 }
