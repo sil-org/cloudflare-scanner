@@ -94,14 +94,12 @@ func main() {
 
 	account := os.Getenv("AWS_ACCOUNT_ID")
 	if account == "" {
-		log.Println("AWS_ACCOUNT_ID is not set")
-		return
+		log.Fatal("AWS_ACCOUNT_ID is not set")
 	}
 
 	region := os.Getenv("AWS_REGION")
 	if region == "" {
-		log.Println("AWS_REGION is not set")
-		return
+		log.Fatal("AWS_REGION is not set")
 	}
 
 	NewCdkStack(app, "CloudflareScanner", &CdkStackProps{
