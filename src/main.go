@@ -13,9 +13,10 @@ import (
 	"github.com/aws/aws-lambda-go/lambda"
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
-	"github.com/aws/aws-sdk-go-v2/service/appconfigdata"
 	"github.com/aws/aws-sdk-go-v2/service/ses"
 	sesTypes "github.com/aws/aws-sdk-go-v2/service/ses/types"
+	"github.com/aws/aws-sdk-go-v2/service/ssm"
+	"github.com/aws/aws-sdk-go-v2/service/ssm/types"
 	"github.com/cloudflare/cloudflare-go"
 	"github.com/getsentry/sentry-go"
 )
@@ -41,35 +42,10 @@ type Alert struct {
 }
 
 func newScanner() (*Scanner, error) {
-	ctx := context.Background()
-	cfg, err := config.LoadDefaultConfig(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	applicationIdentifier := getEnv("APPLICATION_IDENTIFIER", "cloudflare-scanner")
-	configProfileIdentifier := getEnv("CONFIG_PROFILE_IDENTIFIER", "default")
-	environment := getEnv("ENVIRONMENT", "prod")
-
-	client := appconfigdata.NewFromConfig(cfg)
-	session, err := client.StartConfigurationSession(ctx, &appconfigdata.StartConfigurationSessionInput{
-		ApplicationIdentifier:          &applicationIdentifier,
-		ConfigurationProfileIdentifier: &configProfileIdentifier,
-		EnvironmentIdentifier:          &environment,
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	configuration, err := client.GetLatestConfiguration(ctx, &appconfigdata.GetLatestConfigurationInput{
-		ConfigurationToken: session.InitialConfigurationToken,
-	})
-	if err != nil {
-		return nil, err
-	}
+	cfg := readFromParameterStore("/cloudflare-scanner/prod/config")
 
 	var scanner Scanner
-	return &scanner, json.Unmarshal(configuration.Configuration, &scanner)
+	return &scanner, json.Unmarshal([]byte(cfg), &scanner)
 }
 
 func getCFRecordsWithSubstring(substring, zoneName string, recs []cloudflare.DNSRecord, results map[string][]string) {
@@ -298,4 +274,46 @@ func getEnv(key, defaultValue string) string {
 		return defaultValue
 	}
 	return value
+}
+
+// readFromParameterStore reads a parameter value from AWS SSM Parameter Store.
+func readFromParameterStore(name string) string {
+	if !strings.HasPrefix(name, "/") {
+		name = "/" + name
+	}
+
+	if strings.HasSuffix(name, "/") {
+		name = name[:len(name)-1]
+	}
+
+	c, err := config.LoadDefaultConfig(context.Background())
+	if err != nil {
+		panic("failed to get AWS config for parameter store: " + err.Error())
+	}
+	client := ssm.NewFromConfig(c)
+
+	param, err := getParameter(client, name)
+	if err != nil {
+		panic("failed to get parameter from SSM: " + err.Error())
+	}
+
+	log.Println("parameter read from SSM Parameter Store")
+	return *param.Value
+}
+
+// getParameter retrieves a parameter from Parameter Store.
+func getParameter(client *ssm.Client, name string) (*types.Parameter, error) {
+	out, err := client.GetParameter(context.Background(), &ssm.GetParameterInput{
+		Name:           &name,
+		WithDecryption: aws.Bool(true),
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to get parameter %s from SSM: %w", name, err)
+	}
+
+	if out.Parameter == nil {
+		return nil, fmt.Errorf("SSM returned a nil parameter for %s", name)
+	}
+
+	return out.Parameter, nil
 }

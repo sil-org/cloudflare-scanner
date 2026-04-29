@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"os"
 
 	"github.com/aws/aws-cdk-go/awscdk/v2"
@@ -19,16 +20,24 @@ type CdkStackProps struct {
 }
 
 func NewCdkStack(scope constructs.Construct, id string, props *CdkStackProps) awscdk.Stack {
-	var sprops awscdk.StackProps
-	if props != nil {
-		sprops = props.StackProps
+	if props == nil {
+		panic("props is nil")
 	}
-	stack := awscdk.NewStack(scope, &id, &sprops)
+	if props.Env == nil {
+		panic("props.Env is nil")
+	}
+	if props.Env.Region == nil {
+		panic("props.Env.Region is nil")
+	}
+	if props.Env.Account == nil {
+		panic("props.Env.Account is nil")
+	}
 
-	region := os.Getenv("AWS_REGION")
-	appID := os.Getenv("APP_ID")
-	envID := os.Getenv("ENV_ID")
-	configID := os.Getenv("CONFIG_ID")
+	sp := props.StackProps
+	stack := awscdk.NewStack(scope, &id, &sp)
+	region := *props.Env.Region
+	account := *props.Env.Account
+
 	functionName := "CloudflareScanner"
 
 	logGroup := awslogs.NewLogGroup(stack, jsii.String("LambdaLogGroup"), &awslogs.LogGroupProps{
@@ -40,9 +49,6 @@ func NewCdkStack(scope constructs.Construct, id string, props *CdkStackProps) aw
 	function := awslambda.NewFunction(stack, &functionName, &awslambda.FunctionProps{
 		Code: awslambda.Code_FromAsset(jsii.String("../src/bin"), nil),
 		Environment: &map[string]*string{
-			"APP_ID":     &appID,
-			"ENV_ID":     &envID,
-			"CONFIG_ID":  &configID,
 			"SENTRY_DSN": jsii.String(os.Getenv("SENTRY_DSN")),
 			"APP_ENV":    jsii.String(getEnv("APP_ENV", "prod")),
 		},
@@ -73,16 +79,11 @@ func NewCdkStack(scope constructs.Construct, id string, props *CdkStackProps) aw
 		Resources: jsii.Strings("*"), // Adjust this to restrict access if needed
 	}))
 
-	appConfigArn := fmt.Sprintf("arn:aws:appconfig:%s:*:application/%s/environment/%s/configuration/%s",
-		region, appID, envID, configID)
+	parameterArn := fmt.Sprintf("arn:aws:ssm:%s:%s:parameter/cloudflare-scanner/*", region, account)
 	function.AddToRolePolicy(awsiam.NewPolicyStatement(&awsiam.PolicyStatementProps{
-		Actions: jsii.Strings(
-			"appconfig:GetLatestConfiguration",
-			"appconfig:StartConfigurationSession",
-		),
-		Resources: jsii.Strings(appConfigArn),
+		Actions:   jsii.Strings("ssm:GetParametersByPath"),
+		Resources: jsii.Strings(parameterArn),
 	}))
-
 	return stack
 }
 
@@ -91,11 +92,21 @@ func main() {
 
 	app := awscdk.NewApp(nil)
 
+	account := os.Getenv("AWS_ACCOUNT_ID")
+	if account == "" {
+		log.Fatal("AWS_ACCOUNT_ID is not set")
+	}
+
+	region := os.Getenv("AWS_REGION")
+	if region == "" {
+		log.Fatal("AWS_REGION is not set")
+	}
+
 	NewCdkStack(app, "CloudflareScanner", &CdkStackProps{
 		awscdk.StackProps{
 			Env: &awscdk.Environment{
-				Account: jsii.String(os.Getenv("AWS_ACCOUNT_ID")),
-				Region:  jsii.String(os.Getenv("AWS_REGION")),
+				Account: jsii.String(account),
+				Region:  jsii.String(region),
 			},
 			Tags: &map[string]*string{
 				"managed_by":        jsii.String("cdk"),
