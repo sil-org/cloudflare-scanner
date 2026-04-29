@@ -81,7 +81,7 @@ func NewCdkStack(scope constructs.Construct, id string, props *CdkStackProps) aw
 
 	parameterArn := fmt.Sprintf("arn:aws:ssm:%s:%s:parameter/cloudflare-scanner/*", region, account)
 	function.AddToRolePolicy(awsiam.NewPolicyStatement(&awsiam.PolicyStatementProps{
-		Actions:   jsii.Strings("ssm:GetParametersByPath"),
+		Actions:   jsii.Strings("ssm:GetParameter"),
 		Resources: jsii.Strings(parameterArn),
 	}))
 	return stack
