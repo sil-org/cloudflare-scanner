@@ -9,7 +9,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/ses v1.34.22
 	github.com/aws/aws-sdk-go-v2/service/ssm v1.68.5
 	github.com/cloudflare/cloudflare-go v0.116.0
-	github.com/getsentry/sentry-go v0.44.1
+	github.com/getsentry/sentry-go v0.46.1
 )
 
 require (
