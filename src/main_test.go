@@ -2,7 +2,7 @@ package main
 
 import (
 	"encoding/json"
-	"log"
+	"log/slog"
 	"testing"
 )
 
@@ -18,9 +18,9 @@ func TestGetCFRecords(t *testing.T) {
 	for _, alert := range scanner.Alerts {
 		cfRecords := alert.getCFRecords()
 		if len(cfRecords) < 1 {
-			log.Printf("No records found in Cloudflare containing any of these: %v", alert.CFContainsStrings)
+			slog.Info("no records found in Cloudflare", "strings", alert.CFContainsStrings)
 		} else {
-			log.Printf("%d records found containing: %v", len(cfRecords), alert.CFContainsStrings)
+			slog.Info("records found", "count", len(cfRecords), "strings", alert.CFContainsStrings)
 		}
 	}
 }

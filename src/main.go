@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"log"
+	"log/slog"
 	"os"
 	"strings"
 	"time"
@@ -49,11 +49,11 @@ func newScanner() (*Scanner, error) {
 }
 
 func getCFRecordsWithSubstring(substring, zoneName string, recs []cloudflare.DNSRecord, results map[string][]string) {
-	log.Printf("searching for %q in zone %q", substring, zoneName)
+	slog.Info("searching for DNS records", "substring", substring, "zone", zoneName)
 	var subRecs []string
 	for _, r := range recs {
 		if len(r.Name) > 0 && strings.Contains(r.Name, substring) {
-			log.Printf("found %q in zone %q", substring, zoneName)
+			slog.Info("found DNS record", "substring", substring, "zone", zoneName)
 			subRecs = append(subRecs, r.Name+" ... "+r.Content)
 		}
 	}
@@ -65,10 +65,11 @@ func getCFRecordsWithSubstring(substring, zoneName string, recs []cloudflare.DNS
 func (a *Alert) getCFRecords() map[string][]string {
 	api, err := cloudflare.NewWithAPIToken(a.CFApiToken)
 	if err != nil {
-		log.Fatal(err)
+		slog.Error("failed to create Cloudflare API client", "error", err)
+		os.Exit(1)
 	}
 
-	log.Printf("scanning zones: %s", strings.Join(a.CFZoneNames, ", "))
+	slog.Info("scanning zones", "zones", strings.Join(a.CFZoneNames, ", "))
 
 	results := map[string][]string{}
 
@@ -120,7 +121,7 @@ func sendAnEmail(emailMsg sesTypes.Message, sender, recipient string) error {
 	if err != nil {
 		return fmt.Errorf("send email failed: %w", err)
 	}
-	log.Printf("sent %q email to %q", *emailMsg.Subject.Data, recipient)
+	slog.Info("sent email", "subject", *emailMsg.Subject.Data, "recipient", recipient)
 	return nil
 }
 
@@ -145,7 +146,7 @@ func (a *Alert) sendEmails(cfRecords map[string][]string) {
 	for _, address := range a.RecipientEmails {
 		err := sendAnEmail(emailMsg, address, a.SESReturnToAddr)
 		if err != nil {
-			log.Printf("error sending alert email %s: %s", msg, err)
+			slog.Error("error sending alert email", "message", msg, "error", err)
 			lastError = err.Error()
 			badRecipients = append(badRecipients, address)
 		}
@@ -172,7 +173,7 @@ func (a *Alert) sendErrorEmails(err error) {
 	for _, address := range a.RecipientEmails {
 		err := sendAnEmail(emailMsg, address, a.SESReturnToAddr)
 		if err != nil {
-			log.Printf("error sending error email %s: %s", msg, err)
+			slog.Error("error sending error email", "message", msg, "error", err)
 			lastError = err.Error()
 			badRecipients = append(badRecipients, address)
 		}
@@ -217,8 +218,8 @@ func (a *Alert) logEmailError(errorMessage string, badRecipients []string) {
 		addresses,
 		errorMessage,
 	)
-	log.Println(msg)
 	sentry.CaptureException(errors.New(msg))
+	slog.Error("error sending Cloudflare scanner email", "sender", a.SESReturnToAddr, "recipients", addresses, "error", errorMessage)
 }
 
 func handler() error {
@@ -229,7 +230,7 @@ func handler() error {
 	}
 
 	for _, alert := range scanner.Alerts {
-		log.Printf("Starting scan for alert %q", alert.Title)
+		slog.Info("starting scan for alert", "alert", alert.Title)
 
 		if alert.SESCharSet == "" {
 			alert.SESCharSet = scanner.SESCharSet
@@ -241,7 +242,7 @@ func handler() error {
 		cfRecords := alert.getCFRecords()
 
 		if len(cfRecords) < 1 {
-			log.Printf("No records found in Cloudflare containing any of these: %v", alert.CFContainsStrings)
+			slog.Info("no records found in Cloudflare", "strings", alert.CFContainsStrings)
 		} else {
 			alert.sendEmails(cfRecords)
 		}
@@ -264,7 +265,7 @@ func initSentry(dsn string) {
 		Environment: getEnv("APP_ENV", "prod"),
 	})
 	if err != nil {
-		log.Printf("sentry.Init failure: %s", err)
+		slog.Error("sentry.Init failure", "error", err)
 	}
 }
 
@@ -297,7 +298,7 @@ func readFromParameterStore(name string) string {
 		panic("failed to get parameter from SSM: " + err.Error())
 	}
 
-	log.Println("parameter read from SSM Parameter Store")
+	slog.Info("parameter read from SSM Parameter Store", "name", name)
 	return *param.Value
 }
 

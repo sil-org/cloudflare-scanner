@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"log"
+	"log/slog"
 	"os"
 
 	"github.com/aws/aws-cdk-go/awscdk/v2"
@@ -94,12 +94,14 @@ func main() {
 
 	account := os.Getenv("AWS_ACCOUNT_ID")
 	if account == "" {
-		log.Fatal("AWS_ACCOUNT_ID is not set")
+		slog.Error("AWS_ACCOUNT_ID is not set")
+		os.Exit(1)
 	}
 
 	region := os.Getenv("AWS_REGION")
 	if region == "" {
-		log.Fatal("AWS_REGION is not set")
+		slog.Error("AWS_REGION is not set")
+		os.Exit(1)
 	}
 
 	NewCdkStack(app, "CloudflareScanner", &CdkStackProps{
