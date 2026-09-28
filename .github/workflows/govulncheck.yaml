@@ -18,5 +18,5 @@ jobs:
       work-dir: 'src'
       aws-region: ${{ vars.AWS_REGION }}
       aws-role: arn:aws:iam::369020531563:role/cloudflare-scanner-cd
-      from-email: gtis_itse_alerts@groups.sil.org
+      from-email: cloudflare_scanner@ses.sil.org
       to-email: gtis_itse_support+notifications@sil.org
