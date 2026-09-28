@@ -76,7 +76,12 @@ func NewCdkStack(scope constructs.Construct, id string, props *CdkStackProps) aw
 			"ses:SendEmail",
 			"ses:SendRawEmail",
 		),
-		Resources: jsii.Strings("*"), // Adjust this to restrict access if needed
+		Resources: jsii.Strings("*"),
+		Conditions: &map[string]any{
+			"StringEquals": map[string]string{
+				"ses:FromAddress": "cloudflare_scanner@ses.sil.org",
+			},
+		},
 	}))
 
 	parameterArn := fmt.Sprintf("arn:aws:ssm:%s:%s:parameter/cloudflare-scanner/*", region, account)

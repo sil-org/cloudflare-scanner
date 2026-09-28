@@ -47,7 +47,7 @@ resource "aws_iam_role_policy" "cd" {
         Resource = "*"
         Condition = {
           StringEquals = {
-            "ses:FromAddress" = "gtis_itse_alerts@groups.sil.org"
+            "ses:FromAddress" = "cloudflare_scanner@ses.sil.org"
           }
           "ForAllValues:StringEquals" = {
             "ses:Recipients" = "gtis_itse_support@sil.org"
