@@ -41,6 +41,11 @@ type Alert struct {
 	RecipientEmails   []string
 }
 
+type emailParams struct {
+	recipient string
+	sender    string
+}
+
 func newScanner() (*Scanner, error) {
 	cfg := readFromParameterStore("/cloudflare-scanner/prod/config")
 
@@ -99,15 +104,15 @@ func (a *Alert) getCFRecords() map[string][]string {
 	return results
 }
 
-func sendAnEmail(emailMsg sesTypes.Message, sender, recipient string) error {
-	recipients := []string{recipient}
+func sendAnEmail(emailMsg sesTypes.Message, params emailParams) error {
+	recipients := []string{params.recipient}
 
 	input := &ses.SendEmailInput{
 		Destination: &sesTypes.Destination{
 			ToAddresses: recipients,
 		},
 		Message: &emailMsg,
-		Source:  aws.String(sender),
+		Source:  aws.String(params.sender),
 	}
 
 	// Create an SES session.
@@ -121,7 +126,7 @@ func sendAnEmail(emailMsg sesTypes.Message, sender, recipient string) error {
 	if err != nil {
 		return fmt.Errorf("send email failed: %w", err)
 	}
-	slog.Info("sent email", "subject", *emailMsg.Subject.Data, "recipient", recipient)
+	slog.Info("sent email", "subject", *emailMsg.Subject.Data, "recipient", params.recipient)
 	return nil
 }
 
@@ -144,7 +149,10 @@ func (a *Alert) sendEmails(cfRecords map[string][]string) {
 
 	// Send emails to one recipient at a time to avoid one bad email sabotaging it all
 	for _, address := range a.RecipientEmails {
-		err := sendAnEmail(emailMsg, address, a.SESReturnToAddr)
+		err := sendAnEmail(emailMsg, emailParams{
+			sender:    a.SESReturnToAddr,
+			recipient: address,
+		})
 		if err != nil {
 			slog.Error("error sending alert email", "message", msg, "error", err)
 			lastError = err.Error()
@@ -171,7 +179,10 @@ func (a *Alert) sendErrorEmails(err error) {
 
 	// Send emails to one recipient at a time to avoid one bad email sabotaging it all
 	for _, address := range a.RecipientEmails {
-		err := sendAnEmail(emailMsg, address, a.SESReturnToAddr)
+		err := sendAnEmail(emailMsg, emailParams{
+			sender:    a.SESReturnToAddr,
+			recipient: address,
+		})
 		if err != nil {
 			slog.Error("error sending error email", "message", msg, "error", err)
 			lastError = err.Error()
