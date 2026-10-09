@@ -1,6 +1,6 @@
 FROM node:22
 
-ENV GO_VERSION=1.26.6
+ENV GO_VERSION=1.27.2
 
 ADD https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip .
 ADD https://go.dev/dl/go${GO_VERSION}.linux-amd64.tar.gz .
