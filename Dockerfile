@@ -1,22 +1,9 @@
-FROM node:22
-
-ENV GO_VERSION=1.27.3
-
-ADD https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip .
-ADD https://go.dev/dl/go${GO_VERSION}.linux-amd64.tar.gz .
+FROM golang:1.27-trixie
 
 RUN <<EOF
-  unzip awscli-exe-linux-x86_64.zip
-  rm awscli-exe-linux-x86_64.zip
-  ./aws/install
-  rm -rf ./aws
-
-  tar -C /usr/local -xzf go${GO_VERSION}.linux-amd64.tar.gz
-  rm go${GO_VERSION}.linux-amd64.tar.gz
-  ln -s /usr/local/go/bin/go /usr/local/bin/go
-
-  npm install --ignore-scripts --global aws-cdk
-
+  apt-get update && apt-get install -y --no-install-recommends nodejs npm
+  rm -rf /var/lib/apt/lists/*
+  npm install -g aws-cdk
   adduser user
 EOF
 
