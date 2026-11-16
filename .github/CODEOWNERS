@@ -1,4 +1,4 @@
-* @sil-org/developers
+* @sil-org/itse
 /terraform @sil-org/tf-devs
 *.go @sil-org/go-devs
 go.* @sil-org/go-devs
