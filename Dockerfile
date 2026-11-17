@@ -1,22 +1,14 @@
-FROM node:22
+FROM node:24-trixie-slim AS node
 
-ENV GO_VERSION=1.27.3
+FROM golang:1.27-trixie
 
-ADD https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip .
-ADD https://go.dev/dl/go${GO_VERSION}.linux-amd64.tar.gz .
+COPY --from=node /usr/local/bin/node /usr/local/bin/node
+COPY --from=node /usr/local/lib/node_modules /usr/local/lib/node_modules
 
 RUN <<EOF
-  unzip awscli-exe-linux-x86_64.zip
-  rm awscli-exe-linux-x86_64.zip
-  ./aws/install
-  rm -rf ./aws
-
-  tar -C /usr/local -xzf go${GO_VERSION}.linux-amd64.tar.gz
-  rm go${GO_VERSION}.linux-amd64.tar.gz
-  ln -s /usr/local/go/bin/go /usr/local/bin/go
-
-  npm install --ignore-scripts --global aws-cdk
-
+  ln -s ../lib/node_modules/npm/bin/npm-cli.js /usr/local/bin/npm
+  ln -s ../lib/node_modules/npm/bin/npx-cli.js /usr/local/bin/npx
+  npm install -g aws-cdk@2.1148.1
   adduser user
 EOF
 
